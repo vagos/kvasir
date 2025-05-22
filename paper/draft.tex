@@ -236,16 +236,17 @@ float Q_rsqrt(float number) {
 }
 \end{minted}
 
-The following query for \sys uses lines-of-code a coarse metric of idiomaticity.
-\sys will regenerate the program, minimizing this metric.
+The following query for \sys uses lines-of-code a coarse metric of
+idiomaticity. \sys will regenerate the program, minimizing this metric, while
+preserving its I/O behavior.
 \begin{wrapfigure}[3]{r}{.5\columnwidth}
-  \vspace{-10pt}
+  \vspace{-5pt}
   \begin{minted}{prolog}
 equal(io(P), io(P_)).
 #min len(P_).
   \end{minted}
 \end{wrapfigure}
-\sys extracts the $\{\ttt{sig(F)}, \ttt{io(F)}\}$ properties from the original program, where \texttt{sig(F)} is the
+\sys extracts the set of properties $\{\texttt{sig(F)}, \texttt{io(F)}\}$ from the original program, where \texttt{sig(F)} is the
 signature of the function (including its name, return type, and arguments), and \texttt{io(F)} is the I/O behavior of the function
 on a set of generated inputs.
 In this case, where it is instructed to optimize an aspect of the program, \sys will re-prompt
@@ -456,7 +457,9 @@ Across all benchmarks, the planning step completes in under \xxx ms on average.
 % the number of properties to extract and verify, planning reduces the total time
 % and resource usage of the regeneration pipeline.
 
-These results support the claim that \sys’s planning logic — driven by explicit property extraction and knowledge-base reasoning — yields safer and more controllable transformations than prompt-only LLM-based systems.
+These results support the claim that \sys’s planning logic---driven by explicit
+property extraction and knowledge-base reasoning---yields safer and more
+controllable transformations than prompt-only LLM-based systems.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
