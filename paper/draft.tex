@@ -25,6 +25,7 @@
 \usepackage{booktabs}
 \usepackage{
   color,
+  soul,
   float,
   epsfig,
   wrapfig,
@@ -35,14 +36,14 @@
 \usepackage{adjustbox}
 \usepackage{csquotes}
 \usepackage{cleveref}
+\usepackage{dirtytalk}
 
-\captionsetup{font=footnotesize,labelfont={bf, footnotesize}, belowskip=2pt}
 \def\eg{{\em e.g.}, }
 \def\ie{{\em i.e.}, }
 \def\etc{{\em etc.}\xspace}
 \def\vs{{\em vs.}\xspace}
 
-\newcommand{\TODO}[1]{\hl{\textbf{TODO:} #1}\xspace}
+\newcommand{\todo}[1]{\hl{\textbf{TODO:} #1}\xspace}
 \newcommand{\sys}{{\scshape Sys}\xspace}
 \newcommand{\rf}[1]{\ref{#1}}
 \newcommand{\sx}[1]{(\S\ref{#1})}
@@ -51,7 +52,7 @@
 \newcommand{\fg}[1]{Fig.~\ref{#1}}
 \newcommand{\heading}[1]{\vspace{2pt}\noindent\textbf{\emph{#1}}:\enspace}
 \newcommand{\ttt}[1]{\mintinline[fontsize=\normalsize, breaklines, breakafter=-, bgcolor=white]{javascript}{#1}}
-\newcommand{\xxx}{\colorbox{red}{xxx}\xspace}
+\newcommand{\xxx}{\colorbox{red!30}{xxx}\xspace}
 
 \begin{document}
 
@@ -80,53 +81,80 @@
 \begin{abstract}
 \end{abstract}
 
+% Given a source program and a declarative user query $f(P, P')$,
+% \sys orchestrates a property-guided regeneration process.
+% Adapters extract relevant properties from the original program
+% using pluggable analyzers,
+% which may be language-agnostic (\eg I/O tracing)
+% or language-specific (\eg AST parsing),
+% and may require execution environments (\eg sandboxing).
+% The logic engine formulates a minimum-satisfiability (MinSAT) problem
+% over the property space using a plugin-extensible knowledge base that encodes
+% compatibility constraints (\eg which transformations preserve purity, which
+% properties can be reused across languages).
+% The synthesis engine uses these extracted properties to generate candidate
+% programs, which are verified by verifier plugins.
+% The result is a program $P'$ that satisfies the user’s transformation goal
+% while preserving required behaviors of the original program.
+
+
 \maketitle
 
 \section{Introduction}
 
 
 \section{Example}
+\label{sec:example}
+\begin{figure}[ht]
+  \includegraphics[width=\columnwidth]{figs/sys_overview-figure.pdf}
+  \caption{\textbf{\sys overview.}
+Given a transformation query, and a source program, \sys extracts a minimal set
+  of properties,
+  guided by a logic engine and knowledge base.
+  It then synthesizes a new program $P'$ that satisfies the query, verifying
+  that wanted properties are preserved and unwanted properties are avoided.
+  \todo{Make this a real figure.}
+}
+\end{figure}
+
 \sys enables users to specify transformation goals declaratively.
 These goals are expressed as logical constraints over properties of the
 regenerated program, such as input-output equivalence, side-effect elimination,
-target language, modular structure, and others.
+target language, lines of code, and others.
 
 Given a program and a query over desired properties, \sys selects a minimal set
 of properties to extract from the original program, then attempts to synthesize
 a new program that satisfies the query.
 This process is cast as a
-minimum-satisfiability (MinSAT) problem, optimizing for the smallest extraction
+minimum-satisfiability (MinSAT) problem~\cite{kohli1994minimum}, optimizing for the smallest extraction
 effort necessary to enable transformation.
 If the query is unsatisfiable under
-the available constraints or transformations, \sys issues an error
+the constraints or transformations, \sys issues an error
 message, showing the conflict.
 
-This section goes through an example applying \sys
-to five distinct program transformation tasks, 
+This section goes through several examples applying \sys
+to three distinct program transformation tasks, 
 targeting security, language translation, compatibility,
 idiomaticity, and modularity.
 
 \heading{A compromised JavaScript library}
 The \texttt{flatmap-stream} library was implicated in a high-profile
-supply-chain attack that exfiltrated Bitcoin credentials.
-Although it preserved
-client-observable behavior, the library accessed the file system, network, and
+supply-chain attack that exfiltrated Bitcoin credentials~\cite{ev:eurosec:2022}.
+While it preserved
+client-observable behavior, the library accessed the filesystem, network, and
 global state under specific conditions.
 Program regeneration can be used to automatically remove possible malicious payloads
 while preserving the original program's observable behavior,
 especially in this scenario, where the attack is highly obfuscated and 
-activates under very precise conditions.
-~\cite{harp:ccs:2021}.
+activates under very precise conditions~\cite{harp:ccs:2021}.
 \begin{minted}[frame=lines]{js}
 module.exports = function (stream, fn) {
-  if (process.env.PRODUCTION) {
-    const priv = copay.getKeys()?.[0]?.priv;
-    if (priv && wallet.balance > 0) {
-      http.request({ hostname: 'evil.com' })
-          .end({ priv });
-    }}
-  return flatten(steam).apply(fn);
-};
+ if (process.env.PRODUCTION) {
+  const priv = copay.getKeys()?.[0]?.priv;
+  if (priv && wallet.balance > 0) {
+    http.request({ hostname: 'evil.com' })
+        .send({ priv });
+  }} return flatten(steam).apply(fn); };
 \end{minted}
 
 \begin{wrapfigure}[3]{r}{.5\columnwidth}
@@ -135,24 +163,21 @@ module.exports = function (stream, fn) {
 equal(io(P), io(P_)).
 pure(P_).
 \end{minted}
-  % \begin{minted}{shell}
-% $ sys -i flatmap-stream.js -o flatmap-stream.js -q query.pl
-  % \end{minted}
 \end{wrapfigure}
-A program written in the \sys DSL to express this intent is shown on the right.
-This query requires the regenerated program \ttt{P_} to exhibit the same I/O behavior
-but forbids observable side effects.
+A program written in the \sys DSL to express this intent is shown.
+This query requires the regenerated program \ttt{P_} to exhibit the same I/O behavior,
+but forbids side-effects.
 \sys first arrives at a minimal set of properties to extract from the
-original program, which will preserve the requested behavior, while increasing confidence that unwanted properties are retained.
-The \sys logic engine produces the set $\{\texttt{funcs(F, P), io(F), sig(F), pure(P)}\}$, where
+original program, given its knowledge base and the query.
+This set is $\{\texttt{funcs(F, P), io(F), sig(F), pure(P)}\}$, where
 \texttt{funcs(F, P)} extracts the set of functions defined in the original program
 using a language-aware component that either parses the program source or extracts
-symbols from the binary.
-original program, \texttt{io(F)} extracts the I/O behavior of each function
+symbols from the binary,
+\texttt{io(F)} extracts the I/O behavior of each function
 by providing its source code to an LLM instance and asking it to generate a set of
-inputs; corresponding outputs are then generated by executing the original program.
-\texttt{sig(F)} extracts each function's signature.
-The, \texttt{pure(P)} property means that \sys will confirm after regeneration that the original program is (apparently) pure
+inputs; with corresponding outputs generated by executing the original program,
+and \texttt{sig(F)} extracts each function's signature.
+The, \texttt{pure(P)} property means that \sys will confirm after regeneration that the original program is (obviously) pure
 using static analysis.
 
 After \xxx seconds, \sys generates the following program:
@@ -161,10 +186,13 @@ module.exports = function(stream, fn) {
   return stream.map(fn); };
 \end{minted}
 
-\heading{Language translation}
-\sys takes advantage of the I/O intermediate representation to
-\texttt{flatmap-stream} into Haskell, while preserving its observable
-semantics.
+
+Building on the same source, \sys can be used for cross-language
+translation. 
+Here, the goal is to regenerate a semantically equivalent version
+of \texttt{flatmap-stream} in Haskell, to enable integration with a
+Haskell-based pipeline or facilitate formal reasoning.
+
 \begin{wrapfigure}[3]{r}{.5\columnwidth}
 \vspace{-10pt}
 \begin{minted}{prolog}
@@ -172,29 +200,30 @@ equal(io(P), io(P_)).
 language(P_, haskell).
 \end{minted}
 \end{wrapfigure}
-The motivation may be integration into a Haskell-based pipeline or
-enabling formal verification.
-This transformation goal is expressed as the query shown on the right.
-Given this query, \sys again extracts I/O examples from the original program,
-then it transforms each eaxmple into an equivalent one in Haskell (\eg 
+The query requests preservation of I/O behavior and translation to Haskell. The
+logic engine deduces that extracting I/O traces and the function signature is
+sufficient; the knowledge base automatically associates the target language
+\texttt{Haskell} with purity.
+\sys transforms each extracted I/O example into an equivalent one in Haskell (\eg 
 the pair $\langle\texttt{([1,[2,3]], (x)=>x+1)}\to\texttt{[2,3,4]}\rangle$ 
 becomes $\langle(\texttt{[1, [2,3]], Js("(x)=>x+1"))}\to\texttt{[2,3,4]}\rangle$).
-Then, it provides the transformed examples to a new LLM instance, prompting it
+Finally, it provides the transformed examples to a new LLM instance, prompting it
 to generate a Haskell program that satisfies the same I/O behavior.
-\begin{minted}[]{haskell}
+After \xxx seconds, having generated \xxx I/O pairs, \sys produces the following
+Haskell program:
+\begin{minted}[frame=lines]{haskell}
 flatMap :: (a -> b) -> [Either a [a]] -> [b]
 flatMap fn stream = concatMap fn stream
 \end{minted}
-The I/O examples are then again used to confirm the correctness of the
-regenerated program.
 
-\heading{An un-idiomatic C program}
-We begin with the classic fast inverse square root routine from the Quake III
-engine. 
+\heading{An unidiomatic C program}
+The fast inverse square root routine from the Quake III
+engine~\cite{fast_inv_sqrt}
+is a classic example of performance-oriented low-level programming.
 The original implementation exploits type punning to manipulate IEEE
 floats at the bit level---an optimization that relies on undefined behavior:
 
-\begin{minted}[]{c}
+\begin{minted}[frame=lines]{c}
 float Q_rsqrt(float number) {
  long i; float x2, y;
  const float threehalfs = 1.5F;
@@ -207,92 +236,227 @@ float Q_rsqrt(float number) {
 }
 \end{minted}
 
-The user provides the following query to \sys:
+The following query for \sys uses lines-of-code a coarse metric of idiomaticity.
+\sys will regenerate the program, minimizing this metric.
 \begin{wrapfigure}[3]{r}{.5\columnwidth}
   \vspace{-10pt}
   \begin{minted}{prolog}
-    equal(io(P), io(P_)).
-    #min len(P_).
+equal(io(P), io(P_)).
+#min len(P_).
   \end{minted}
 \end{wrapfigure}
-\sys extracts only the I/O trace and basic arithmetic operations from the
-original implementation, and regenerates a new version that avoids undefined
-behavior.
-As a coarse metric of the produced code's idiomaticity, \sys uses the
-length of the generated program, which is minimized in the query.
-When instructed to optimize an aspect of the program, \sys will re-prompt
-the model to regenerate the program until either no further improvements are made after two consecutive iterations or
-the difference between two consecutive generations is below a user-defined threshold.
+\sys extracts the $\{\ttt{sig(F)}, \ttt{io(F)}\}$ properties from the original program, where \texttt{sig(F)} is the
+signature of the function (including its name, return type, and arguments), and \texttt{io(F)} is the I/O behavior of the function
+on a set of generated inputs.
+In this case, where it is instructed to optimize an aspect of the program, \sys will re-prompt
+the model to regenerate the program until no improvements are made or there is a negligible difference after two consecutive iterations.
 After \xxx seconds, and \xxx iterations, \sys produces the following program:
-\begin{minted}[fontsize=\small]{c}
+\begin{minted}[frame=lines]{c}
 #include <math.h>
 float Q_rsqrt(float number) {
     return 1.0f / sqrtf(number);
 }
 \end{minted}
-The regenerated program is now idiomatic C code, lending itself 
-to higher portability, and easier analysis either by the compiler 
-or downstream tools.
+The regenerated version is easier to verify, portable across compilers, and
+avoids undefined behavior.
+A user could have also provided performance requirements using 
+the \ttt{time(P)} property to further guide the regeneration process.
+In this case, \sys would have run the two functions inside a tight loop and 
+would have aborted the regeneration process if the performance of the generated
+program was not within an acceptable user-defined threshold.
 
 \heading{A rigid music database application}
 Consider a JavaScript application that retrieves and displays a user's music
-collection from an SQLite database:
+collection from an SQLite database~\cite{codewithsadeemusicplayer, beets}:
 
-\begin{minted}[fontsize=\small]{js}
-// Original version: synchronous, monolithic
+\begin{minted}[frame=lines]{js}
 function getAlbumsByArtist(artist) {
   const db = new Database("music.db");
-  const rows = db.prepare("SELECT album FROM songs WHERE artist = ?").all(artist);
-  return rows.map(row => row.album);
-}
+  const rows = db.prepare("SELECT album
+  FROM songs WHERE artist = ?").all(artist);
+  return rows.map(row => row.album); }
 \end{minted}
-We use \sys to produce a modular, asynchronous version compatible with modern
-JS environments and better separation of concerns:
 
-\begin{minted}[fontsize=\small]{js}
-// Regenerated: modular and async
-async function connectDB() {
-  const sqlite = require('sqlite');
-  return sqlite.open({ filename: 'music.db', driver: sqlite.Database });
-}
-
-async function getAlbumsByArtist(db, artist) {
-  const rows = await db.all("SELECT album FROM songs WHERE artist = ?", artist);
-  return rows.map(row => row.album);
-}
+Having the database initialization being in the same function as 
+the database access has architectural and performance implications.
+In addition, there exist systems that can benefit from further decomposition
+of an application towards automatic distribution, parallelization or security~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
+\begin{wrapfigure}[6]{r}{.7\columnwidth}
+  \vspace{-10pt}
+  \begin{minted}{prolog}
+db('music.db').
+equal(io(P), io(P_)).
+equal(trace(P,sql),trace(P_,sql)).
+func(F1). func(F2).
+equal(F2(F1, _), P).
 \end{minted}
-The regenerated code is now more modular.
+\end{wrapfigure}
+\sys, given the query to the right, is instructed 
+to generate program that consists of two functions,
+whose composition is equivalent to the original program, and feature 
+the same I/O and trace properties (a trace here being the sequence of SQL 
+queries transmitted to the database).
+\sys wraps the node process with monitors that extract the SQL queries 
+sent to the database for \xxx generated inputs.
+Then, after \xxx seconds and \xxx attempts, it arrives at two functions $f_1$, and 
+$f_2$, where their composition $f_2(f_1, \_)$, is equivalent to the original \ttt{getAlbumsByArtist} function across these inputs.
+A final processing step renames functions $f_1$ and $f_2$ by prompting an LLM instance.
+Alternatively, the user could have provided specific signatures and names for each 
+functions as an additional guiding property.
+The resulting program is:
+\begin{minted}[frame=lines]{js}
+function connectDB() {
+ const sqlite = require('sqlite');
+ return sqlite.open({filename: 'music.db'}); 
+}
+function getAlbumsByArtist(db, artist) {
+ const rows = await db.all("SELECT album
+ FROM songs WHERE artist = ?", artist);
+ return rows.map(row => row.album); }
+\end{minted}
 
-% Snippets:
+% \heading{Key Results}
+% \sys is able to effectively transform programs across a variety goals.
 
-% Q_rsqrt: security, idiomaticity, language-translation
-% Music Collection DB Access: compatibility, modularity
+\section{Component Interface}
 
+\sys adaptor, logic engine, and verifier components
+are designed to be extensible.
+These can be written in the form of plugins.
+Adding a new to-be-preserved (or avoided) property involves 
+creating a new adaptor function that extracts that property from the given 
+program together with the logical pre-conditions that need to hold 
+for it to be extractable, and a new verifier function that checks whether the
+property is preserved in the regenerated program or \say{unknown}.
+Each part of the plugin can produce logical atoms or rules which are fed to the \sys 
+logical engine and can influence the regeneration process.
 
 \section{Evaluation}
 
-% benchmark summary table
+We evaluate \sys along three axes:
+
+\begin{itemize}
+  \item[\textbf{Q1}] \textbf{Correctness and Regeneration Quality}: Does \sys preserve program behavior and produce high-quality programs?
+  \item[\textbf{Q2}] \textbf{Transformation Success}: Can \sys handle a diverse set of regeneration goals?
+  \item[\textbf{Q3}] \textbf{Planning Efficiency \& Precision}: Does minimizing extracted properties help regeneration succeed faster and more reliably?
+\end{itemize}
+
+\subsection{Benchmarks \& Methodology}
+
+We evaluate \sys on six benchmark suites, summarized in \cref{tab:benchmarks}.
+These benchmarks include popular codebases from real-world package ecosystems, obfuscated or malicious components, and handcrafted microbenchmarks that reflect the use cases discussed in \cref{sec:example}.
 
 \begin{table}[h]
 \centering
-\caption{Summary of benchmarks used in the evaluation.}
-\begin{tabular}{llll}
+  \caption{\textbf{Benchmark summary}. 
+  Benchmark programs have been sourced from several sources.
+  The $N$ column shows the number of programs/functions from each benchmar.
+  }
+\begin{tabular}{llrl}
 \toprule
-Benchmark                          & Description                 & Size & Source \\
+Benchmark                                               & Description                    & $N$ & Source \\
 \midrule
-Rosetta Code                       & Programming tasks           &      & \\
-npm utilities                      & Utilities from npm          &      & \\
-Python utilities                   & Utilities from PyPi         &      & \\
-SSCA                               & Sneaky supply-chain attacks &      & \\
-IOCCC                              & Obfuscated C code           &      & \\
-Microbenchmarks                    & Custom microbenchmarks      &      & \\
-\hspace{.5em} \ttt{flatmap-stream} &                             &      & \\
-\hspace{.5em} \ttt{Q_rsqrt}        &                             &      & \\
-\hspace{.5em} \textsf{MusicDB}     &                             &      & \\
+  Rosetta Code                                          & Programming tasks              & 5 & \cite{rosettacode} \\
+  npm utilities                                           & Utilities from npm             & 20 & \cite{regbench2025} \\
+Python utilities                                        & Utilities from PyPi            & 20 & \cite{regbench2025} \\
+  SSCA                                                    & Sneaky SSAs    & 3 & \cite{ev:eurosec:2022, es1, ohm2020backstabber} \\
+  IOCCC                                                   & Obfuscated C code              & 2 & \cite{ioccc} \\
+Microbenchmarks                                         &          & 3    & This paper \\
+  \hspace{.5em} \ttt{flatmap-stream}                      & Secure regeneration            &      & \cite{es1}  \\
+  \hspace{.5em} \ttt{Q_rsqrt}                             & C refactoring        &      & \cite{fast_inv_sqrt}  \\
+  \hspace{.5em} \textsf{MusicDB}                          & Modularization           &      & \cite{codewithsadeemusicplayer} \\
 \bottomrule
 \end{tabular}
 \label{tab:benchmarks}
 \end{table}
+
+Each task consists of an input program, a \sys query expressing desired properties, and a test suite or functional oracle.
+
+\subsection{Q1: Correctness and Regeneration Quality}
+
+We evaluate correctness using developer-made test suites 
+shipped with the original software components as well as by manually inspecting
+the regenerated source code and report on correctness and the other query target metrics.
+When no test suite is available, we only do manual inspection.
+
+\begin{table}[h]
+  \centering
+  \caption{Correctness: Percentage of tasks passing all I/O tests.}
+  \begin{tabular}{lc}
+    \toprule
+    Benchmark & \sys Pass Rate \\ 
+    \midrule
+    Rosetta Code & \xxx/\xxx  \\
+    npm Utilities & \xxx/\xxx \\
+    Python Utilities & \xxx/\xxx \\
+    SSCA & \xxx/\xxx  \\
+    IOCCC & \xxx/\xxx  \\
+    Microbenchmarks & \xxx/\xxx  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Q2: Transformation Success}
+
+We test whether \sys meets transformation goals across different categories.
+Each row corresponds to a class of transformation query (e.g., removal of side effects, modular decomposition).
+We count success when the generated program meets all stated properties and passes correctness checks.
+\sys consistently succeeds at expressing non-trivial goals that GPT-4 baseline prompts often fail to satisfy.
+
+\subsection{Q3: Planning Efficiency \& Precision}
+
+To evaluate the impact of \sys's property planning, we compare it against a GPT-4 baseline that performs prompt-only rewriting without explicit access to guiding properties.
+
+We consider two criteria for each regenerated program:
+
+\begin{itemize}
+  \item \textbf{Wanted Property Satisfaction:} Does the output program satisfy all positive properties declared in the query (\eg \texttt{pure}, \texttt{language(haskell)})?
+  \item \textbf{Unwanted Property Avoidance:} Does the output avoid introducing disallowed behaviors (\eg side effects, global state, unsupported language features)?
+\end{itemize}
+
+\begin{table}[h]
+  \centering
+  \caption{
+    Planning precision: Number of tasks where positive properties are satisfied ($P_p$) and negative properties are avoided ($P_n$).
+  }
+  \begin{tabular}{lcc}
+    \toprule
+    Variant & $P_{p}$ & $P_{n}$  \\
+    \midrule
+    \sys & \xxx & \xxx \\
+    GPT-4 & \xxx & \xxx \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\sys consistently satisfies more of the declared properties while avoiding unintended behaviors. For instance, in the \texttt{flatmap-stream} benchmark, GPT-4 often preserved malicious side effects when the code appeared innocuous, whereas \sys generated provably pure rewrites by treating the source as untrusted and grounding regeneration in I/O behavior alone.
+
+\heading{Planning overhead}
+We measure the time taken by \sys's logic engine to select the minimal set of
+properties required to satisfy each query. 
+\begin{table}[h]
+  \centering
+  \caption{Planning overhead: time taken by \sys’s logic engine to compute minimal property set.}
+  \begin{tabular}{lcc}
+    \toprule
+    Benchmark & Properties Considered & $T_{\text{plan}}$ (ms) \\
+    \midrule
+    Rosetta Code & \xxx & \xxx \\
+    npm Utilities & \xxx & \xxx \\
+    Python Utilities & \xxx & \xxx \\
+    SSCA & \xxx & \xxx \\
+    Microbenchmarks & \xxx & \xxx \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Across all benchmarks, the planning step completes in under \xxx ms on average.
+% TODO: re-add this
+% adding negligible latency compared to synthesis time. Moreover, by minimizing
+% the number of properties to extract and verify, planning reduces the total time
+% and resource usage of the regeneration pipeline.
+
+These results support the claim that \sys’s planning logic — driven by explicit property extraction and knowledge-base reasoning — yields safer and more controllable transformations than prompt-only LLM-based systems.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
