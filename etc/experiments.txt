@@ -1,0 +1,39 @@
+# Q_rsqrt results with codellama
+
+[🍎 ~]$ ollama run codellama:7b
+>>> float Q_rsqrt(float number)
+...
+... give me a short function with this signature. make it as short as possible.
+
+Here is one way to implement the `Q_rsqrt` function:
+```
+float Q_rsqrt(float number) {
+    return 1.0f / sqrtf(number);
+}
+```
+This implementation uses the `sqrtf` function from the C standard library to compute the
+square root of a number and then divides it by 1.0f to get the reciprocal.
+
+>>>
+[🍎 ~]$ ollama run codellama:7b
+>>> float Q_rsqrt(float number) {
+... long i; float x2, y;
+... const float threehalfs = 1.5F;
+... x2 = number * 0.5F; y = number;
+... i = * ( long * ) &y; // evil bit level hack
+... i = 0x5f3759df - ( i >> 1 );
+... y = * ( float * ) &i;
+... y = y * ( threehalfs - ( x2 * y * y ) );
+... return y;
+... }
+...
+... give me an equivalent function but it as short as possible
+
+Here is a shorter version of the `Q_rsqrt` function using bitwise operations:
+```
+float Q_rsqrt(float number) {
+  long i = * (long *) &number; // evil bit level hack
+  i = 0x5f3759df - (i >> 1);
+  return * (float *) &i;
+}
+```

@@ -1,0 +1,11 @@
+properties to extract from program/function:
+  - io pairs
+  - function signature
+  - function type
+  - source code
+  - cfg
+  - system call trace
+  - touched/modified files
+  - sql queries
+
+Daikon invariants?

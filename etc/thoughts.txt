@@ -1,0 +1,6 @@
+a declarative interface for keeping/removing properties from a function
+
+maybe a function is parallelized but you want to have it run in a single thread
+maybe you say what properties need to hold and the system figures out what properties to keep or remove
+by having more abstract properties, the synthesizer might be able to make optimizations
+eg if instead of concrete output values you have intervals, the synthesizer might be able to make optimizations
