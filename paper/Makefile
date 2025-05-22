@@ -41,6 +41,6 @@ once:
 	pdflatex --shell-escape $*.tex
 
 clean:
-	/bin/rm -f $(PDFS) *.out *.fdb_latexmk *.synctex.gz *.dvi *.aux *.ps *~ *.log *.lot *.lof *.toc *.blg *.bbl -r _minted* $(GENPDFS)
+	/bin/rm -rf $(PDFS) *.out *.fdb_latexmk *.synctex.gz *.dvi *.aux *.ps *~ *.log *.lot *.lof *.toc *.blg *.bbl -r _minted* $(GENPDFS)
 
 FORCE:

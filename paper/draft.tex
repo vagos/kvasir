@@ -1,4 +1,4 @@
-\documentclass[sigplan,anonymous]{acmart}
+\documentclass[sigplan]{acmart}
 
 % \acmSubmissionID{PAPER ID}
 \renewcommand\footnotetextcopyrightpermission[1]{}
@@ -34,38 +34,267 @@
 }
 \usepackage{adjustbox}
 \usepackage{csquotes}
+\usepackage{cleveref}
 
 \captionsetup{font=footnotesize,labelfont={bf, footnotesize}, belowskip=2pt}
+\def\eg{{\em e.g.}, }
+\def\ie{{\em i.e.}, }
+\def\etc{{\em etc.}\xspace}
+\def\vs{{\em vs.}\xspace}
 
 \newcommand{\TODO}[1]{\hl{\textbf{TODO:} #1}\xspace}
-\newcommand{\sys}{{\scshape TOOL}\xspace}
+\newcommand{\sys}{{\scshape Sys}\xspace}
 \newcommand{\rf}[1]{\ref{#1}}
 \newcommand{\sx}[1]{(\S\ref{#1})}
 \newcommand{\cf}[1]{(\emph{Cf}.\S\ref{#1})}
 \newcommand{\se}[1]{\S\ref{#1}}
 \newcommand{\fg}[1]{Fig.~\ref{#1}}
 \newcommand{\heading}[1]{\vspace{2pt}\noindent\textbf{\emph{#1}}:\enspace}
-\newcommand{\ttt}[1]{\mintinline[fontsize=\normalsize, breaklines, breakafter=-]{js}{#1}}
+\newcommand{\ttt}[1]{\mintinline[fontsize=\normalsize, breaklines, breakafter=-, bgcolor=white]{javascript}{#1}}
+\newcommand{\xxx}{\colorbox{red}{xxx}\xspace}
 
 \begin{document}
 
 
-\title{Scalable Program Regeneration}
+\title{\sys: Controllable Program Regeneration}
+\author{Evangelos Lamprou}
+
+
+% \sys is a framework for regenerating programs.
+% \sys accepts a variety of wanted program properties that should be preserved after regeneration.
+% \sys also takes a set of guiding properties that will be given as input to the regeneration component.
+% Then, \sys will regenerate the program to satisfy the wanted properties while preserving the guiding properties.
+% \sys can be used for source to source transformation, program repair, (original code can be: insecure, slow, proprietary, wrong, bad context, different language, non-idiomatic).
+% \sys uses a plugin architecture that allows extending it with program property extractors (IO pairs, CFG, AST, execution traces, execution time, etc.).
+% The regeneration component can be extended with different regeneration algorithms (e.g., genetic programming, symbolic execution, LLM, etc.).
+
+% Use cases for something like this include:
+% - program repair
+% - turning insecure code into secure code by removing side-effects
+% - transforming a program in language A to language B
+% - turning a program into a more idiomatic version of the same language
+% - having a program use a different API
+% - have a program be more amendable to parallelization
+% - have a program be more amendable to further analysis or transformation
 
 \begin{abstract}
-
 \end{abstract}
 
 \maketitle
 
 \section{Introduction}
 
+
 \section{Example}
+\sys enables users to specify transformation goals declaratively.
+These goals are expressed as logical constraints over properties of the
+regenerated program, such as input-output equivalence, side-effect elimination,
+target language, modular structure, and others.
+
+Given a program and a query over desired properties, \sys selects a minimal set
+of properties to extract from the original program, then attempts to synthesize
+a new program that satisfies the query.
+This process is cast as a
+minimum-satisfiability (MinSAT) problem, optimizing for the smallest extraction
+effort necessary to enable transformation.
+If the query is unsatisfiable under
+the available constraints or transformations, \sys issues an error
+message, showing the conflict.
+
+This section goes through an example applying \sys
+to five distinct program transformation tasks, 
+targeting security, language translation, compatibility,
+idiomaticity, and modularity.
+
+\heading{A compromised JavaScript library}
+The \texttt{flatmap-stream} library was implicated in a high-profile
+supply-chain attack that exfiltrated Bitcoin credentials.
+Although it preserved
+client-observable behavior, the library accessed the file system, network, and
+global state under specific conditions.
+Program regeneration can be used to automatically remove possible malicious payloads
+while preserving the original program's observable behavior,
+especially in this scenario, where the attack is highly obfuscated and 
+activates under very precise conditions.
+~\cite{harp:ccs:2021}.
+\begin{minted}[frame=lines]{js}
+module.exports = function (stream, fn) {
+  if (process.env.PRODUCTION) {
+    const priv = copay.getKeys()?.[0]?.priv;
+    if (priv && wallet.balance > 0) {
+      http.request({ hostname: 'evil.com' })
+          .end({ priv });
+    }}
+  return flatten(steam).apply(fn);
+};
+\end{minted}
+
+\begin{wrapfigure}[3]{r}{.5\columnwidth}
+\vspace{-10pt}
+\begin{minted}{prolog}
+equal(io(P), io(P_)).
+pure(P_).
+\end{minted}
+  % \begin{minted}{shell}
+% $ sys -i flatmap-stream.js -o flatmap-stream.js -q query.pl
+  % \end{minted}
+\end{wrapfigure}
+A program written in the \sys DSL to express this intent is shown on the right.
+This query requires the regenerated program \ttt{P_} to exhibit the same I/O behavior
+but forbids observable side effects.
+\sys first arrives at a minimal set of properties to extract from the
+original program, which will preserve the requested behavior, while increasing confidence that unwanted properties are retained.
+The \sys logic engine produces the set $\{\texttt{funcs(F, P), io(F), sig(F), pure(P)}\}$, where
+\texttt{funcs(F, P)} extracts the set of functions defined in the original program
+using a language-aware component that either parses the program source or extracts
+symbols from the binary.
+original program, \texttt{io(F)} extracts the I/O behavior of each function
+by providing its source code to an LLM instance and asking it to generate a set of
+inputs; corresponding outputs are then generated by executing the original program.
+\texttt{sig(F)} extracts each function's signature.
+The, \texttt{pure(P)} property means that \sys will confirm after regeneration that the original program is (apparently) pure
+using static analysis.
+
+After \xxx seconds, \sys generates the following program:
+\begin{minted}[frame=lines]{js}
+module.exports = function(stream, fn) {
+  return stream.map(fn); };
+\end{minted}
+
+\heading{Language translation}
+\sys takes advantage of the I/O intermediate representation to
+\texttt{flatmap-stream} into Haskell, while preserving its observable
+semantics.
+\begin{wrapfigure}[3]{r}{.5\columnwidth}
+\vspace{-10pt}
+\begin{minted}{prolog}
+equal(io(P), io(P_)).
+language(P_, haskell).
+\end{minted}
+\end{wrapfigure}
+The motivation may be integration into a Haskell-based pipeline or
+enabling formal verification.
+This transformation goal is expressed as the query shown on the right.
+Given this query, \sys again extracts I/O examples from the original program,
+then it transforms each eaxmple into an equivalent one in Haskell (\eg 
+the pair $\langle\texttt{([1,[2,3]], (x)=>x+1)}\to\texttt{[2,3,4]}\rangle$ 
+becomes $\langle(\texttt{[1, [2,3]], Js("(x)=>x+1"))}\to\texttt{[2,3,4]}\rangle$).
+Then, it provides the transformed examples to a new LLM instance, prompting it
+to generate a Haskell program that satisfies the same I/O behavior.
+\begin{minted}[]{haskell}
+flatMap :: (a -> b) -> [Either a [a]] -> [b]
+flatMap fn stream = concatMap fn stream
+\end{minted}
+The I/O examples are then again used to confirm the correctness of the
+regenerated program.
+
+\heading{An un-idiomatic C program}
+We begin with the classic fast inverse square root routine from the Quake III
+engine. 
+The original implementation exploits type punning to manipulate IEEE
+floats at the bit level---an optimization that relies on undefined behavior:
+
+\begin{minted}[]{c}
+float Q_rsqrt(float number) {
+ long i; float x2, y;
+ const float threehalfs = 1.5F;
+ x2 = number * 0.5F; y  = number;
+ i  = * ( long * ) &y; // evil bit level hack
+ i  = 0x5f3759df - ( i >> 1 );
+ y  = * ( float * ) &i;
+ y  = y * ( threehalfs - ( x2 * y * y ) );
+ return y;
+}
+\end{minted}
+
+The user provides the following query to \sys:
+\begin{wrapfigure}[3]{r}{.5\columnwidth}
+  \vspace{-10pt}
+  \begin{minted}{prolog}
+    equal(io(P), io(P_)).
+    #min len(P_).
+  \end{minted}
+\end{wrapfigure}
+\sys extracts only the I/O trace and basic arithmetic operations from the
+original implementation, and regenerates a new version that avoids undefined
+behavior.
+As a coarse metric of the produced code's idiomaticity, \sys uses the
+length of the generated program, which is minimized in the query.
+When instructed to optimize an aspect of the program, \sys will re-prompt
+the model to regenerate the program until either no further improvements are made after two consecutive iterations or
+the difference between two consecutive generations is below a user-defined threshold.
+After \xxx seconds, and \xxx iterations, \sys produces the following program:
+\begin{minted}[fontsize=\small]{c}
+#include <math.h>
+float Q_rsqrt(float number) {
+    return 1.0f / sqrtf(number);
+}
+\end{minted}
+The regenerated program is now idiomatic C code, lending itself 
+to higher portability, and easier analysis either by the compiler 
+or downstream tools.
+
+\heading{A rigid music database application}
+Consider a JavaScript application that retrieves and displays a user's music
+collection from an SQLite database:
+
+\begin{minted}[fontsize=\small]{js}
+// Original version: synchronous, monolithic
+function getAlbumsByArtist(artist) {
+  const db = new Database("music.db");
+  const rows = db.prepare("SELECT album FROM songs WHERE artist = ?").all(artist);
+  return rows.map(row => row.album);
+}
+\end{minted}
+We use \sys to produce a modular, asynchronous version compatible with modern
+JS environments and better separation of concerns:
+
+\begin{minted}[fontsize=\small]{js}
+// Regenerated: modular and async
+async function connectDB() {
+  const sqlite = require('sqlite');
+  return sqlite.open({ filename: 'music.db', driver: sqlite.Database });
+}
+
+async function getAlbumsByArtist(db, artist) {
+  const rows = await db.all("SELECT album FROM songs WHERE artist = ?", artist);
+  return rows.map(row => row.album);
+}
+\end{minted}
+The regenerated code is now more modular.
+
+% Snippets:
+
+% Q_rsqrt: security, idiomaticity, language-translation
+% Music Collection DB Access: compatibility, modularity
+
 
 \section{Evaluation}
+
+% benchmark summary table
+
+\begin{table}[h]
+\centering
+\caption{Summary of benchmarks used in the evaluation.}
+\begin{tabular}{llll}
+\toprule
+Benchmark                          & Description                 & Size & Source \\
+\midrule
+Rosetta Code                       & Programming tasks           &      & \\
+npm utilities                      & Utilities from npm          &      & \\
+Python utilities                   & Utilities from PyPi         &      & \\
+SSCA                               & Sneaky supply-chain attacks &      & \\
+IOCCC                              & Obfuscated C code           &      & \\
+Microbenchmarks                    & Custom microbenchmarks      &      & \\
+\hspace{.5em} \ttt{flatmap-stream} &                             &      & \\
+\hspace{.5em} \ttt{Q_rsqrt}        &                             &      & \\
+\hspace{.5em} \textsf{MusicDB}     &                             &      & \\
+\bottomrule
+\end{tabular}
+\label{tab:benchmarks}
+\end{table}
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
 
 \end{document}
-
