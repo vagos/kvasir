@@ -113,7 +113,6 @@ Given a transformation query, and a source program, \sys extracts a minimal set
   guided by a logic engine and knowledge base.
   It then synthesizes a new program $P'$ that satisfies the query, verifying
   that wanted properties are preserved and unwanted properties are avoided.
-  \todo{Make this a real figure.}
 }
 \end{figure}
 
@@ -286,7 +285,6 @@ of an application towards automatic distribution, parallelization or security~\c
   \vspace{-10pt}
   \begin{minted}{prolog}
 db('music.db').
-equal(io(P), io(P_)).
 equal(trace(P,sql),trace(P_,sql)).
 func(F1). func(F2).
 equal(F2(F1, _), P).
