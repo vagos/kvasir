@@ -211,8 +211,9 @@ to generate a Haskell program that satisfies the same I/O behavior.
 After \xxx seconds, having generated \xxx I/O pairs, \sys produces the following
 Haskell program:
 \begin{minted}[frame=lines]{haskell}
-flatMap :: (a -> b) -> [Either a [a]] -> [b]
-flatMap fn stream = concatMap fn stream
+flatmap :: (a -> b) -> NestedList a -> [b]
+flatmap f (Elem x) = [f x]
+flatmap f (List x) = concatMap (flatmap f) x
 \end{minted}
 
 \heading{An unidiomatic C program}
