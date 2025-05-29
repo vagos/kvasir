@@ -23,7 +23,7 @@ dependencies = [
 packages = ["kvasir"]
 
 [project.scripts]
-sysregen = "kvasir.cli:main"
+kvasir = "kvasir.cli:main"
 
 [project.optional-dependencies]
 test = [
