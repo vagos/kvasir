@@ -1,0 +1,11 @@
+[lint]
+select = [
+    "E", # pycodestyle
+    "F", # Pyflakes
+    "B", # flake8-bugbear
+    "SIM", # flake8-simplify
+    "I", # isort
+]
+
+# Ignore max line length errors
+ignore = ["E501"]
