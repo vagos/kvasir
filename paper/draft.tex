@@ -94,7 +94,7 @@
 % properties can be reused across languages).
 % The synthesis engine uses these extracted properties to generate candidate
 % programs, which are verified by verifier plugins.
-% The result is a program $P'$ that satisfies the user’s transformation goal
+% The result is a program $P'$ that satisfies the user's transformation goal
 % while preserving required behaviors of the original program.
 
 
@@ -102,6 +102,54 @@
 
 \section{Introduction}
 
+Modern software systems are in constant flux.
+Developers refactor legacy code,
+adapt libraries to evolving APIs, translate modules across programming
+languages, and harden components against emerging security threats.
+Each transformation demands a careful balance between preserving intended
+functionality and satisfying new goals such as modularity, performance, or
+safety.
+While these transformations are conceptually simple, they are often
+brittle, time-consuming, and require deep expertise.
+% TODO: Introduce LLMs around here
+
+Existing tools help with narrow cases---transpilers translate syntax, linters
+enforce style, verifiers check correctness---but they fall short when
+transformations must preserve or alter semantic properties across diverse goals
+and program representations. 
+Worse, developers often lack precise ways to
+specify what should remain unchanged or what must be transformed.
+
+We present \sys, a system for scalable program regeneration.
+\sys allows users
+to express transformation goals declaratively, as logical constraints over
+program properties---such as input/output behavior, side-effect freedom, target
+language, trace equivalence, or modular structure. Given a source program and
+such a query, \sys extracts a minimal set of relevant properties, guided by a
+logic engine and a domain-specific knowledge base, and synthesizes a new
+program that satisfies the desired constraints.
+
+At the core of \sys is a property-guided synthesis pipeline: the system casts
+transformation as a constrained synthesis problem, minimizing extraction effort
+while ensuring semantic alignment. If no valid program exists under the given
+constraints, \sys provides informative failure explanations derived from
+logical conflict analysis.
+
+\sys is evaluated across a diverse set of transformation tasks, including:
+	Security hardening, by stripping latent malicious behavior while preserving intended functionality;
+	Cross-language translation, by regenerating semantically equivalent programs in new languages;
+	Idiomatic rewriting, by producing safer and more portable variants of legacy code;
+	Modular decomposition, by restructuring monolithic components into composable parts.
+  % TODO: Results?
+
+The paper's contributions are:
+\begin{itemize}
+ \item A declarative interface and accompanying DSL for program transformation, allowing users to express semantic goals as logical queries over properties of the regenerated program;
+ \item A property-aware transformation framework, combining logic-based reasoning, minimal extraction, and LLM-backed synthesis;
+ % TODO: Implementation of sys?
+\end{itemize}
+
+By coupling logic-driven reasoning with modern synthesis tools, \sys enables a new class of transformation workflows---ones that are expressive, verifiable, and adaptable across software tasks.
 
 \section{Example}
 \label{sec:example}
@@ -436,7 +484,7 @@ We measure the time taken by \sys's logic engine to select the minimal set of
 properties required to satisfy each query. 
 \begin{table}[h]
   \centering
-  \caption{Planning overhead: time taken by \sys’s logic engine to compute minimal property set.}
+  \caption{Planning overhead: time taken by \sys's logic engine to compute minimal property set.}
   \begin{tabular}{lcc}
     \toprule
     Benchmark & Properties Considered & $T_{\text{plan}}$ (ms) \\
@@ -456,7 +504,7 @@ Across all benchmarks, the planning step completes in under \xxx ms on average.
 % the number of properties to extract and verify, planning reduces the total time
 % and resource usage of the regeneration pipeline.
 
-These results support the claim that \sys’s planning logic---driven by explicit
+These results support the claim that \sys's planning logic---driven by explicit
 property extraction and knowledge-base reasoning---yields safer and more
 controllable transformations than prompt-only LLM-based systems.
 
