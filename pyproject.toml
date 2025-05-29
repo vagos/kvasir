@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kvasir"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.7"
+authors = [
+    {name = "Evangelos Lamprou", email = "vagos@lamprou.xyz"}
+]
+keywords = ["pluggy", "plugin", "kvasir"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pluggy>=1.0",
+    "click>=7.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

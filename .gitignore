@@ -1,3 +1,19 @@
 # haskell
 *.hi
 *.o
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+.env/
+venv/
+.python-version
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+docs/_build/
