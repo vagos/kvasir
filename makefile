@@ -10,5 +10,9 @@ lint:
 	@echo "Running linter..."
 	ruff check .
 
+fix:
+	@echo "Fixing issues with ruff..."
+	ruff check . --fix
+
 type:
-	python -m mypy kvasir
+	mypy kvasir
