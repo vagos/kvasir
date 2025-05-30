@@ -9,6 +9,7 @@ def precondition(program):
 
 @hookimpl
 def extract(program):
+    print(program)
     # Extract top-level function signatures using regex (simplified)
     pattern = r'function\s+(\w+)\s*\(([^)]*)\)'
     matches = re.findall(pattern, program.code)

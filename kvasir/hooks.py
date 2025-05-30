@@ -5,7 +5,7 @@ hookspec = HookspecMarker("kvasir")
 hookimpl = HookimplMarker("kvasir")
 
 @hookspec
-def extract(p):
+def extract(program):
     """
     Extract a property from the program.
 
@@ -27,4 +27,10 @@ def knowledge(kb):
     Add domain-specific rules or constraints to the logic engine's knowledge base.
     
     Accepts a KnowledgeBase object and may mutate it (e.g., kb.add_rule(...)).
+    """
+
+@hookspec
+def language_support():
+    """
+    Return the program subclass that this plugin supports.
     """

@@ -11,9 +11,10 @@ from kvasir.query import Query
 @click.option("--output", "-o", required=True, help="Path to the output regenerated program")
 def main(input, query, output):
     """Run a declarative program regeneration."""
+    plugins = load_plugins()
+
     program = Program(entry=input)
     query = Query(entry=query)
-    plugins = load_plugins()
 
     program_ = transform(program, query, plugins)
 

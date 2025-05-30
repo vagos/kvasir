@@ -17,4 +17,4 @@ def transform(program, query, plugins) -> Program:
     return program_
 
 def synthesize(program, plan):
-    pass
+    return program

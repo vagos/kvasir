@@ -1,4 +1,5 @@
 from enum import Enum
+from abc import ABC, abstractmethod
 
 class Language(Enum):
     JS = "javascript"
@@ -7,19 +8,43 @@ class Language(Enum):
     def __str__(self):
         return self.value.capitalize()
 
-class Program:
+def detect_language(entry):
+    """Detect the programming language based on the file extension."""
+    if entry.endswith(".js"):
+        return Language.JS
+    elif entry.endswith(".hs"):
+        return Language.HS
+    else:
+        raise ValueError(f"Unsupported file type: {entry}")
+
+class ProgramMeta(type):
+    registry = {}
+
+    def __call__(cls, entry, *args, **kwargs):
+        lang = detect_language(entry)
+        subclass = cls.registry.get(lang, cls)
+        print(f"Detected language: {lang}, using subclass: {subclass.__name__}")
+        return super(ProgramMeta, subclass).__call__(entry, *args, **kwargs)
+
+class Program(metaclass=ProgramMeta):
+    language = None  # Set by subclasses
     def __init__(self, entry):
         self.entry = entry
-        self.annotations = {}  # Plugins can write here
+        self.annotations = {} # Plugins can write/read here
+        self.code = self.load()
+
+    def load(self) -> str:
+        """Load the program code from the entry file."""
+        with open(self.entry, 'r') as file:
+            return file.read()
 
     def save(self, output):
-        pass
+        """Save the program code to the output file."""
+        with open(output, 'w') as file:
+            file.write(self.code)
 
     def __setitem__(self, key, value):
         self.annotations[key] = value
 
     def __getitem__(self, key):
         return self.annotations.get(key, None)
-
-    def __repr__(self):
-        return f"Program({self.entry=}, {self.annotations=})"
