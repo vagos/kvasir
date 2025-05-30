@@ -10,8 +10,7 @@ if logger.hasHandlers():
 # Attach handler with formatter
 handler = logging.StreamHandler(sys.stdout)
 formatter = logging.Formatter(
-    "%(levelname)-4s | %(filename)s:%(lineno)d - %(message)s",
-    datefmt="%H:%M:%S"
+    "%(levelname)-4s | %(filename)s:%(lineno)d - %(message)s", datefmt="%H:%M:%S"
 )
 handler.setFormatter(formatter)
 logger.addHandler(handler)

@@ -29,6 +29,7 @@ kvasir = "kvasir.cli:main"
 test = [
     "pytest>=6.0",
     "ruff",
+    "black",
     "mypy>=1.10.0",
 ]
 

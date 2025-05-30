@@ -3,10 +3,11 @@ from kvasir.program import Program
 
 from .utils import logger
 
+
 def transform(program, query, plugins) -> Program:
     for plugin in plugins:
-        logger.info(f"Loading plugin: {plugin.__name__}")
         if hasattr(plugin, "extract"):
+            logger.info(f"Extracting properties with {plugin.__name__}")
             plugin.extract(program)
 
     plan = logic.plan(query, program)
@@ -18,6 +19,7 @@ def transform(program, query, plugins) -> Program:
             plugin.verify(program, program_)
 
     return program_
+
 
 def synthesize(program, plan):
     return program

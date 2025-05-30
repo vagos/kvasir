@@ -7,8 +7,9 @@ test:
 	true
 
 lint:
-	@echo "Running linter..."
+	@echo "Running linters..."
 	ruff check .
+	black --check .
 
 fix:
 	@echo "Fixing issues with ruff..."
