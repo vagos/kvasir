@@ -1,5 +1,8 @@
 from enum import Enum
+from dataclasses import dataclass
+from pathlib import Path
 
+from .utils import logger
 
 class Language(Enum):
     JS = "javascript"
@@ -19,18 +22,20 @@ def detect_language(entry):
 
 class ProgramMeta(type):
     registry = {}
-
     def __call__(cls, entry, *args, **kwargs):
         lang = detect_language(entry)
         subclass = cls.registry.get(lang.value, cls)
         logger.info(f"Detected language: {lang}, using subclass: {subclass.__name__} from {cls.registry}")
         return super(ProgramMeta, subclass).__call__(entry, *args, **kwargs)
 
+@dataclass
 class Program(metaclass=ProgramMeta):
-    language = None  # Set by subclasses
+    language: Language # Set by subclasses
+    annotations: dict  # For plugins to store data
+    entry: Path
     def __init__(self, entry):
-        self.entry = entry
-        self.annotations = {} # Plugins can write/read here
+        self.entry = Path(entry)
+        self.annotations = {}
         self.code = self.load()
 
     def load(self) -> str:
