@@ -1,7 +1,8 @@
-import kvasir.program
-
-from kvasir.hooks import hookimpl
 import re
+
+import kvasir.program
+from kvasir.hooks import hookimpl
+
 
 @hookimpl
 def precondition(program):

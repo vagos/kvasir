@@ -1,5 +1,4 @@
-from pluggy import HookspecMarker
-from pluggy import HookimplMarker
+from pluggy import HookimplMarker, HookspecMarker
 
 hookspec = HookspecMarker("kvasir")
 hookimpl = HookimplMarker("kvasir")

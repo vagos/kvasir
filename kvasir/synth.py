@@ -1,6 +1,7 @@
 import kvasir.logic as logic
 from kvasir.program import Program
 
+
 def transform(program, query, plugins) -> Program:
     for plugin in plugins:
         if hasattr(plugin, "extract"):

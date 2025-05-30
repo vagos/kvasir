@@ -1,5 +1,6 @@
-from kvasir.program import Program
 from kvasir.hooks import hookimpl
+from kvasir.program import Program
+
 
 class JavaScriptProgram(Program):
     language = "javascript"

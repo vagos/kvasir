@@ -1,8 +1,9 @@
 import click
-from kvasir.program import Program
-from kvasir.synth import transform
+
 from kvasir.plugins import load_plugins
+from kvasir.program import Program
 from kvasir.query import Query
+from kvasir.synth import transform
 
 
 @click.command()

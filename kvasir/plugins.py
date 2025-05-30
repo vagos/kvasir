@@ -1,8 +1,10 @@
-from . import hooks
-from . import program
 import importlib
-import pluggy
 import pkgutil
+
+import pluggy
+
+from . import hooks, program
+
 
 def load_plugins():
     pm = pluggy.PluginManager("kvasir")
@@ -10,7 +12,8 @@ def load_plugins():
     from kvasir import default_plugins
 
     for _, name, ispkg in pkgutil.iter_modules(default_plugins.__path__):
-        if ispkg: continue
+        if ispkg:
+            continue
         module_name = f"kvasir.default_plugins.{name}"
         module = importlib.import_module(module_name)
         pm.register(module)
