@@ -22,8 +22,8 @@ class ProgramMeta(type):
 
     def __call__(cls, entry, *args, **kwargs):
         lang = detect_language(entry)
-        subclass = cls.registry.get(lang, cls)
-        print(f"Detected language: {lang}, using subclass: {subclass.__name__}")
+        subclass = cls.registry.get(lang.value, cls)
+        logger.info(f"Detected language: {lang}, using subclass: {subclass.__name__} from {cls.registry}")
         return super(ProgramMeta, subclass).__call__(entry, *args, **kwargs)
 
 class Program(metaclass=ProgramMeta):

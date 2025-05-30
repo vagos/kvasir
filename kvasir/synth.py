@@ -1,9 +1,11 @@
 import kvasir.logic as logic
 from kvasir.program import Program
 
+from .utils import logger
 
 def transform(program, query, plugins) -> Program:
     for plugin in plugins:
+        logger.info(f"Loading plugin: {plugin.__name__}")
         if hasattr(plugin, "extract"):
             plugin.extract(program)
 
