@@ -7,6 +7,7 @@ from .program import Program
 from .query import Query
 from .synth import transform
 from .utils import logger
+from .logic import KnowledgeBase
 
 
 @click.command()
@@ -28,8 +29,9 @@ def main(input, query, output, verbose):
 
     program = Program(entry=input)
     query = Query(entry=query)
+    kb = KnowledgeBase()
 
-    program_ = transform(program, query, plugins)
+    program_ = transform(program, kb, query, plugins)
     logger.info(f"Tranformed program {program} to {program_}")
 
     program_.save(output)

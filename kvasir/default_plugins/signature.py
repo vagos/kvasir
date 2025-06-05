@@ -1,5 +1,6 @@
 import re
 
+from kvasir.logic import KnowledgeBase
 import kvasir.program
 from kvasir.hooks import hookimpl
 
@@ -33,3 +34,7 @@ def verify(o_p, r_p):
         return sorted((sig["name"], tuple(sig["args"])) for sig in sigs)
 
     return normalize(orig_sigs) == normalize(regen_sigs)
+
+@hookimpl
+def knowledge(kb: KnowledgeBase, program):
+    kb.add_logic("can(signature(p)).") 

@@ -24,7 +24,7 @@ def verify(o_p, r_p):
 
 
 @hookspec
-def knowledge(kb):
+def knowledge(kb, program):
     """
     Add domain-specific rules or constraints to the logic engine's knowledge base.
 

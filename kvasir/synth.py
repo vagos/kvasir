@@ -27,13 +27,17 @@ class SynthesizeProgram(dspy.Module):
         regenerated_program = self.synthesize(input_program=program).output_program
         return dspy.Prediction(output_program=regenerated_program)
 
-def transform(program, query, plugins) -> Program:
+def transform(program, kb, query, plugins) -> Program:
     for plugin in plugins:
         if hasattr(plugin, "extract"):
             logger.info(f"Extracting properties with {plugin.__name__}")
             plugin.extract(program)
 
-    plan = logic.plan(query, program)
+        if hasattr(plugin, "knowledge"):
+            logger.info(f"Adding knowledge with {plugin.__name__}")
+            program = plugin.knowledge(kb, program)
+
+    plan = logic.plan(kb, query, program)
 
     program_ = synthesize(program, plan)
 
