@@ -1,8 +1,31 @@
+import logging
+
+import dotenv
+import dspy
+
 import kvasir.logic as logic
 from kvasir.program import Program
 
 from .utils import logger
 
+dotenv.load_dotenv()
+
+lm = dspy.LM('openai/gpt-4o-mini')
+dspy.configure(lm=lm)
+
+class RegenerateProgram(dspy.Signature):
+    """LLM signature for program regeneration."""
+    input_program: Program  = dspy.InputField(desc="Input program to be regenerated.")
+    output_program: Program = dspy.OutputField(desc="Regenerated program based on the context provided.")
+
+class SynthesizeProgram(dspy.Module):
+    def __init__(self):
+        self.synthesize = dspy.ChainOfThought(RegenerateProgram)
+
+    def forward(self, program: Program):
+        """Regenerate the program's source code based on the context provided."""
+        regenerated_program = self.synthesize(input_program=program).output_program
+        return dspy.Prediction(output_program=regenerated_program)
 
 def transform(program, query, plugins) -> Program:
     for plugin in plugins:
@@ -21,5 +44,15 @@ def transform(program, query, plugins) -> Program:
     return program_
 
 
-def synthesize(program, plan):
+def synthesize(program, plan) -> Program:
+    """Synthesize a new program based on the plan."""
+
+    logger.info(f"Synthesizing program with plan: {plan}")
+    synthesize = SynthesizeProgram()
+    prediction = synthesize(program)
+
+    program = prediction.output_program
+    if logger.level == logging.DEBUG:
+        dspy.inspect_history(10)
+    
     return program

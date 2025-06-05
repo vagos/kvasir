@@ -17,6 +17,7 @@ classifiers = [
 dependencies = [
     "pluggy>=1.0",
     "click>=7.0",
+    "dspy==2.6.27",
 ]
 
 [tool.setuptools]

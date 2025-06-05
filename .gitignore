@@ -1,8 +1,11 @@
+# general
+.env
+
 # haskell
 *.hi
 *.o
 
-# Python
+# python
 __pycache__/
 *.py[cod]
 *.egg-info/

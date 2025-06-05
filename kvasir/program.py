@@ -22,6 +22,8 @@ def detect_language(entry):
     else:
         raise ValueError(f"Unsupported file type: {entry}")
 
+class Property():
+    pass
 
 class ProgramMeta(type):
     registry = {}
@@ -37,9 +39,10 @@ class ProgramMeta(type):
 
 @dataclass
 class Program(metaclass=ProgramMeta):
-    language: Language  # Set by subclasses
-    annotations: dict  # For plugins to store data
+    language: Language # Set by subclasses
+    annotations: dict # For plugins to store data
     entry: Path
+    code: str
 
     def __init__(self, entry):
         self.entry = Path(entry)
