@@ -26,9 +26,9 @@ def extract(program):
 
 
 @hookimpl
-def verify(o_p, r_p):
-    orig_sigs = o_p["signatures"]
-    regen_sigs = r_p["signatures"]
+def verify(original_program, regenerated_program):
+    orig_sigs = original_program["signatures"]
+    regen_sigs = regenerated_program["signatures"]
 
     def normalize(sigs):
         return sorted((sig["name"], tuple(sig["args"])) for sig in sigs)

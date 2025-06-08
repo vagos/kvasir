@@ -15,7 +15,7 @@ def extract(program):
 
 
 @hookspec
-def verify(o_p, r_p):
+def verify(original_program, regenerated_program):
     """
     Verify that a property holds between the original and regenerated program.
 
