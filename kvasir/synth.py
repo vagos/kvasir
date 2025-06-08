@@ -22,7 +22,7 @@ class SynthesizeProgram(dspy.Module):
     def __init__(self):
         self.synthesize = dspy.ChainOfThought(RegenerateProgram)
 
-    def forward(self, program: Program):
+    def forward(self, program: Program) -> dspy.Prediction:
         """Regenerate the program's source code based on the context provided."""
         regenerated_program = self.synthesize(input_program=program).output_program
         return dspy.Prediction(output_program=regenerated_program)
@@ -38,10 +38,11 @@ def transform(program, kb, query, plugins) -> Program:
             plugin.knowledge(kb, program)
 
     plan = logic.plan(kb, query, program)
-
     program_ = synthesize(program, plan)
 
     for plugin in plugins:
+        logger.info(f"Verifying {program_} against {program} with {plugin.__name__}")
+
         if hasattr(plugin, "verify"):
             plugin.verify(program, program_)
 
@@ -55,8 +56,8 @@ def synthesize(program, plan) -> Program:
     synthesize = SynthesizeProgram()
     prediction = synthesize(program)
 
-    program = prediction.output_program
+    regenerated_program = prediction.output_program
     if logger.level == logging.DEBUG:
         dspy.inspect_history(10)
     
-    return program
+    return regenerated_program
