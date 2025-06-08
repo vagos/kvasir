@@ -35,7 +35,7 @@ def transform(program, kb, query, plugins) -> Program:
 
         if hasattr(plugin, "knowledge"):
             logger.info(f"Adding knowledge with {plugin.__name__}")
-            program = plugin.knowledge(kb, program)
+            plugin.knowledge(kb, program)
 
     plan = logic.plan(kb, query, program)
 
