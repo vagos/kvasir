@@ -1,9 +1,10 @@
 from kvasir.hooks import hookimpl
-from kvasir.program import Program
+from kvasir.program import Program, Language
+from dataclasses import dataclass
 
 
 class JavaScriptProgram(Program):
-    language = "javascript"
+    language = Language.JS
 
     def load(self):
         """Load the JavaScript code from the entry file."""
@@ -13,7 +14,7 @@ class JavaScriptProgram(Program):
     def save(self, output):
         """Save the JavaScript code to the output file."""
         with open(output, "w") as file:
-            file.write(self.code)
+            file.write(self.src)
 
 
 @hookimpl

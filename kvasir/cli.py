@@ -30,10 +30,9 @@ def main(input, query, output, verbose):
     program = Program(entry=input)
     query = Query(entry=query)
     kb = KnowledgeBase()
-
-    logger.info(f"Loaded program: {program}")
+    logger.debug(f"Loaded program: {program}")
 
     program_ = transform(program, kb, query, plugins)
-    logger.info(f"Tranformed program {program} to {program_}")
+    logger.debug(f"Tranformed program {program} to {program_}")
 
     program_.save(output)

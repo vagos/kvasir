@@ -2,6 +2,7 @@ import logging
 
 import dotenv
 import dspy
+import tempfile
 
 import kvasir.logic as logic
 from kvasir.program import Program
@@ -15,17 +16,23 @@ dspy.configure(lm=lm)
 
 class RegenerateProgram(dspy.Signature):
     """LLM signature for program regeneration."""
-    input_program: Program  = dspy.InputField(desc="Input program to be regenerated.")
-    output_program: Program = dspy.OutputField(desc="Regenerated program based on the context provided.")
+    input_program: str  = dspy.InputField(desc="Input program to be regenerated.")
+    output_program: str = dspy.OutputField(desc="Source code of the regenerated program.")
 
 class SynthesizeProgram(dspy.Module):
     def __init__(self):
         self.synthesize = dspy.ChainOfThought(RegenerateProgram)
 
-    def forward(self, program: Program) -> dspy.Prediction:
+    def forward(self, program: Program) -> Program:
         """Regenerate the program's source code based on the context provided."""
-        regenerated_program = self.synthesize(input_program=program).output_program
-        return dspy.Prediction(output_program=regenerated_program)
+        regenerated_program_src = self.synthesize(input_program=program.to_lm()).output_program
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=program.language.suffix()) as temp_file:
+            temp_file.write(regenerated_program_src.encode('utf-8'))
+            temp_file_path = temp_file.name
+            regenerated_program = Program(entry=temp_file_path)
+            regenerated_program.annotations = program.annotations.copy() # TODO: Do this better
+            return regenerated_program
 
 def transform(program, kb, query, plugins) -> Program:
     for plugin in plugins:
@@ -54,9 +61,7 @@ def synthesize(program, plan) -> Program:
 
     logger.info(f"Synthesizing program with plan: {plan}")
     synthesize = SynthesizeProgram()
-    prediction = synthesize(program)
-
-    regenerated_program = prediction.output_program
+    regenerated_program = synthesize(program)
     if logger.level == logging.DEBUG:
         dspy.inspect_history(10)
     

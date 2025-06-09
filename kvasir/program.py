@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 from .utils import logger
 
@@ -11,6 +12,16 @@ class Language(Enum):
 
     def __str__(self):
         return self.value.capitalize()
+
+    def suffix(self):
+        """Return the file suffix for the language."""
+        match self:
+            case Language.JS:
+                return ".js"
+            case Language.HS:
+                return ".hs"
+            case _:
+                raise ValueError(f"Unsupported language: {self.value}")
 
 
 def detect_language(entry):
@@ -23,14 +34,32 @@ def detect_language(entry):
         raise ValueError(f"Unsupported file type: {entry}")
 
 class Property():
-    pass
+    """Base class for properties that can be attached to programs."""
+    def __init__(self, name: str, value: Any):
+        self.name = name
+        self.value = value
+        self.tobe_preserved = True # Whether this property should be preserved during regeneration
+
+    def to_lm(self) -> str:
+        """Convert the property to a string representation for a language model. This should include domain-specific information."""
+        return f"""The program has the property '{self.name}'.
+It is {self.value}.
+It should {'not' if not self.tobe_preserved else ''} be preserved during regeneration.
+"""
+
+    def set_preserve(self, preserve: bool):
+        """Set whether this property should be preserved during regeneration."""
+        self.tobe_preserved = preserve
+
+    def __repr__(self):
+        return f"{self.name}: {self.value}"
 
 class ProgramMeta(type):
-    registry = {}
+    registry: dict[Language, "Program"] = {}
 
     def __call__(cls, entry, *args, **kwargs):
         lang = detect_language(entry)
-        subclass = cls.registry.get(lang.value, cls)
+        subclass = cls.registry.get(lang, cls)
         logger.info(
             f"Detected language: {lang}, using subclass: {subclass.__name__} from {cls.registry}"
         )
@@ -40,24 +69,32 @@ class ProgramMeta(type):
 @dataclass
 class Program(metaclass=ProgramMeta):
     language: Language # Set by subclasses
-    annotations: dict # For plugins to store data
+    annotations: dict[str, Property] # For plugins to store data
     entry: Path
-    code: str
+    src: str
 
     def __init__(self, entry):
         self.entry = Path(entry)
         self.annotations = {}
-        self.code = self.load()
+        self.src = self.load()
+
+    def to_lm(self) -> str:
+        """Convert the program to a string representation for a language model."""
+        repr = ""
+        for name, prop in self.annotations.items():
+            repr += prop.to_lm()
+
+        return repr
 
     def load(self) -> str:
-        """Load the program code from the entry file."""
+        """Load the program src from the entry file."""
         with open(self.entry, "r") as file:
             return file.read()
 
     def save(self, output):
-        """Save the program code to the output file."""
+        """Save the program src to the output file."""
         with open(output, "w") as file:
-            file.write(self.code)
+            file.write(self.src)
 
     def __setitem__(self, key, value):
         self.annotations[key] = value
