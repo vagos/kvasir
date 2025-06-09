@@ -3,6 +3,13 @@ from clingo import Control
 from .utils import logger
 from .program import Program
 
+class Query:
+    def __init__(self, entry: str):
+        with open(entry, "r") as file:
+            if not file.readable():
+                raise ValueError(f"Query file {entry} is not readable.")
+            self.query = file.read().strip()
+
 class KnowledgeBase:
     def __init__(self):
         self.ctl = Control([])

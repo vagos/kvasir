@@ -4,10 +4,9 @@ import click
 
 from .plugins import load_plugins
 from .program import Program
-from .query import Query
 from .synth import regenerate
 from .utils import logger
-from .logic import KnowledgeBase
+from .logic import KnowledgeBase, Query
 
 
 @click.command()
