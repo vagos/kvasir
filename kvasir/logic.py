@@ -19,25 +19,25 @@ class KnowledgeBase:
         """Solve the query using the knowledge base."""
         results = []
 
-        logger.debug(f"Solving query: {query.query}")
-        logger.debug(f"Using program:\n{self.program}")
-
         self.add_logic(query.query)
+
+        logger.debug(f"Using program:\n{self.program}")
 
         self.ctl.add("base", [], self.program)
         self.ctl.ground([("base", [])])
 
         def on_model(model):
+            r = []
             for atom in model.symbols(shown=True):
                 if atom.match("do", 1):
-                    results.append(atom.arguments[0].name)
+                    r.append(atom.arguments[0].name)
+            results.append(r)
 
         with self.ctl.solve(yield_=True) as handle:
             for model in handle:
                 on_model(model)
 
-        logger.debug(f"Solved query: {query.query} with results: {results}")
-        return results
+        return results[-1]
 
     def add_logic(self, logic: str, comment: str=""):
         self.program += logic + " " + (f"% {comment}" if comment else "") + '\n'
@@ -53,6 +53,8 @@ ndo(N) :- N = #count { X : do(X) }.
 #maximize { N : ndo(N) }.
 
 :- goal(X), not do(X).
+
+:- do(language(P, L1)), do(language(P, L2)), L1 != L2. % A program has one language.
 
 #show do/1.
         """
