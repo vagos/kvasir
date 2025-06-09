@@ -12,10 +12,6 @@ class Signature(Property):
     """
 
 @hookimpl
-def precondition(program):
-    return program["language"] == kvasir.program.Language.JS
-
-@hookimpl
 def apply(program):
     # Extract top-level function signatures using regex (simplified)
     pattern = r"function\s+(\w+)\s*\(([^)]*)\)"
