@@ -81,10 +81,15 @@ class Program(metaclass=ProgramMeta):
     def to_lm(self) -> str:
         """Convert the program to a string representation for a language model."""
         repr = ""
+        repr += f"The program is written in {self.language}.\n"
         for name, prop in self.annotations.items():
             repr += prop.to_lm()
 
         return repr
+
+    def to_logic(self) -> str:
+        """Convert the program to a logic representation."""
+        return f"language(p, {self.language.value})."
 
     def load(self) -> str:
         """Load the program src from the entry file."""
