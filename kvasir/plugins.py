@@ -21,10 +21,4 @@ def load_plugins():
     # Load external plugins
     pm.load_setuptools_entrypoints("kvasir")
 
-    # Register program subclasses from plugins
-    for impl in pm.hook.language_support():
-        assert impl, "Plugin must return a program subclass"
-        lang = impl.language
-        program.ProgramMeta.registry[lang] = impl
-
     return pm.get_plugins()

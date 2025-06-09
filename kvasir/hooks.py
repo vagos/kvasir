@@ -31,9 +31,3 @@ def knowledge(kb, program):
 
     Accepts a KnowledgeBase object and may mutate it (e.g., kb.add_rule(...)).
     """
-
-@hookspec
-def language_support():
-    """
-    Return the program subclass that this plugin supports.
-    """
