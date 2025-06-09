@@ -9,3 +9,8 @@ properties to extract from program/function:
   - sql queries
 
 Daikon invariants?
+
+Translation from one language to the other. You take the IO pairs in Javascript and you turn them into the same values in Haskell.
+
+How do we have data structures shared between plugins? Like IO pairs, function signatures, etc.?
+  Probably plugins can handle this from their precondition hook. Example: Property X needs to be already extracted from the original program
