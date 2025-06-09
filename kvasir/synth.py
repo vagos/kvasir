@@ -15,7 +15,9 @@ lm = dspy.LM('openai/gpt-4o-mini')
 dspy.configure(lm=lm)
 
 class RegenerateProgram(dspy.Signature):
-    """LLM signature for program regeneration."""
+    """
+    You should synthesize the program's source code while preserving the properties that are marked as to be preserved.
+    """
     input_program: str  = dspy.InputField(desc="Input program to be regenerated.")
     output_program: str = dspy.OutputField(desc="Source code of the regenerated program.")
 
@@ -35,22 +37,26 @@ class SynthesizeProgram(dspy.Module):
             return regenerated_program
 
 def regenerate(program, kb, query, plugins) -> Program:
+    kb.add_logic(program.to_logic())
     for plugin in plugins:
-        if hasattr(plugin, "extract"):
-            logger.info(f"Extracting properties with {plugin.__name__}")
-            plugin.extract(program)
-
         if hasattr(plugin, "knowledge"):
             logger.info(f"Adding knowledge with {plugin.__name__}")
             plugin.knowledge(kb, program)
 
     plan = logic.plan(kb, query, program)
+    logger.info(f"Generated plan: {plan}")
+
+    for plugin in plugins:
+        logger.info(f"Trying to apply {plugin.__name__} to the program {program}")
+        if hasattr(plugin, "apply") and plan.does(plugin.__name__):
+            logger.info(f"Applying {plugin.__name__}")
+            plugin.apply(program)
+
     program_ = synthesize(program, plan)
 
     for plugin in plugins:
-        logger.info(f"Verifying {program_} against {program} with {plugin.__name__}")
-
-        if hasattr(plugin, "verify"):
+        if hasattr(plugin, "verify") and plan.does(plugin.__name__):
+            logger.info(f"Verifying {program_} against {program} with {plugin.__name__}")
             plugin.verify(program, program_)
 
     return program_
@@ -63,6 +69,6 @@ def synthesize(program, plan) -> Program:
     synthesize = SynthesizeProgram()
     regenerated_program = synthesize(program)
     if logger.level == logging.DEBUG:
-        dspy.inspect_history(10)
+        dspy.inspect_history()
     
     return regenerated_program

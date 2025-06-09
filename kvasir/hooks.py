@@ -5,12 +5,13 @@ hookimpl = HookimplMarker("kvasir")
 
 
 @hookspec
-def extract(program):
+def apply(program):
     """
-    Extract a property from the program.
+    Apply the plugin to the program.
+    This can either extract a property from the program or modify it in some way.
 
-    Should mutate or annotate the program object (e.g., program.signatures = ...).
-    Returns set of extracted properties
+    This should mutate or annotate the program object (e.g., program.signatures = ...).
+    Returns set of extracted/modified properties.
     """
 
 
@@ -30,7 +31,6 @@ def knowledge(kb, program):
 
     Accepts a KnowledgeBase object and may mutate it (e.g., kb.add_rule(...)).
     """
-
 
 @hookspec
 def language_support():
