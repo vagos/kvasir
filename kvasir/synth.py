@@ -34,7 +34,7 @@ class SynthesizeProgram(dspy.Module):
             regenerated_program.annotations = program.annotations.copy() # TODO: Do this better
             return regenerated_program
 
-def transform(program, kb, query, plugins) -> Program:
+def regenerate(program, kb, query, plugins) -> Program:
     for plugin in plugins:
         if hasattr(plugin, "extract"):
             logger.info(f"Extracting properties with {plugin.__name__}")

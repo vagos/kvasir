@@ -5,7 +5,7 @@ import click
 from .plugins import load_plugins
 from .program import Program
 from .query import Query
-from .synth import transform
+from .synth import regenerate
 from .utils import logger
 from .logic import KnowledgeBase
 
@@ -32,7 +32,7 @@ def main(input, query, output, verbose):
     kb = KnowledgeBase()
     logger.debug(f"Loaded program: {program}")
 
-    program_ = transform(program, kb, query, plugins)
+    program_ = regenerate(program, kb, query, plugins)
     logger.debug(f"Tranformed program {program} to {program_}")
 
     program_.save(output)
