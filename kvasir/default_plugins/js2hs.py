@@ -4,7 +4,7 @@ from kvasir.program import Program, Language
 
 @hookimpl
 def apply(program):
-    pass
+    program.language = Language.HS
 
 @hookimpl
 def knowledge(kb, program):
@@ -13,7 +13,7 @@ def knowledge(kb, program):
     This is a placeholder function for demonstration purposes.
     """
     kb.add_logic("can(js2hs(p)).", "This program can be transformed from JavaScript to Haskell.")
-    kb.add_logic("do(js2hs(p)) :- do(language(p, haskell)).")
+    kb.add_logic("do(language(p, haskell)) :- do(js2hs(p)).")
     kb.add_logic(":- do(js2hs(p)), not language(p, javascript).")
 
 # This plugin can define its own plugin manager to allow transformation of other properties
