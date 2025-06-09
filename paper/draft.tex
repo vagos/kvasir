@@ -113,6 +113,14 @@ While these transformations are conceptually simple, they are often
 brittle, time-consuming, and require deep expertise.
 % TODO: Introduce LLMs around here
 
+% Mention that:
+% 1. They have shown great promise in program synthesis + 
+% 2. They can not do negative reasoning well - 
+% 3. Their output are often closely aligned to their inputs. They are gullible (susceptible to adversarial inputs). -
+% 4. Difficult to verify correctness of outputs against certain properties. The
+%    user cannot easily set requirements or say output should be within a range of
+%    acceptance
+
 Existing tools help with narrow cases---transpilers translate syntax, linters
 enforce style, verifiers check correctness---but they fall short when
 transformations must preserve or alter semantic properties across diverse goals
@@ -120,7 +128,7 @@ and program representations.
 Worse, developers often lack precise ways to
 specify what should remain unchanged or what must be transformed.
 
-We present \sys, a system for scalable program regeneration.
+This paper present \sys, a system for scalable program regeneration.
 \sys allows users
 to express transformation goals declaratively, as logical constraints over
 program properties---such as input/output behavior, side-effect freedom, target
