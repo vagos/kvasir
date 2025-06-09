@@ -15,30 +15,34 @@ class KnowledgeBase:
         self.ctl = Control([])
         self.program = ""
 
-    def solve(self, query: str):
+    def solve(self, query: Query):
+        """Solve the query using the knowledge base."""
         results = []
 
-        # self.add_logic(query)
+        logger.debug(f"Solving query: {query.query}")
+        logger.debug(f"Using program:\n{self.program}")
+
+        self.add_logic(query.query)
 
         self.ctl.add("base", [], self.program)
         self.ctl.ground([("base", [])])
 
         def on_model(model):
-            atoms = [str(atom) for atom in model.symbols(shown=True)]
-            results.append(atoms)
+            for atom in model.symbols(shown=True):
+                if atom.match("do", 1):
+                    results.append(atom.arguments[0].name)
 
         with self.ctl.solve(yield_=True) as handle:
             for model in handle:
                 on_model(model)
-                logger.debug(f"Model: {model}")
 
+        logger.debug(f"Solved query: {query.query} with results: {results}")
         return results
 
-    def add_logic(self, logic: str):
-        self.program += logic + "\n"
+    def add_logic(self, logic: str, comment: str=""):
+        self.program += logic + " " + (f"% {comment}" if comment else "") + '\n'
 
-def run_engine(kb: KnowledgeBase, query: str, program: Program):
-
+def run_engine(kb: KnowledgeBase, query: Query, program: Program) -> Dict[str, Any]:
     code = (
         """
 do(X) :- goal(X).
@@ -56,11 +60,11 @@ ndo(N) :- N = #count { X : do(X) }.
 
     kb.add_logic(code)
 
-    return kb.solve(query)
+    return { k: True for k in kb.solve(query)}
 
 class Plan:
-    def __init__(self, extracted_properties):
-        self.properties: Dict[str, Any] = extracted_properties  # Dict[str, Any]
+    def __init__(self, properties: Dict[str, Any]):
+        self.properties: Dict[str, Any] = properties
         self.history = []  # e.g., list of prior generations / decisions
 
     def reconfigure(self, new_info) -> "Plan":
@@ -68,11 +72,21 @@ class Plan:
         self.history.append(new_info)
         # Optionally mutate `self.properties` or add constraints
         return self
+    
+    def does(self, property_name: str) -> bool:
+        """Check if the plan includes actions for the given plugin."""
+        # Handle module names
+        if "." in property_name:
+            property_name = property_name.split(".")[-1]
+        return property_name in self.properties
 
-def plan(kb, query, program):
+    def __repr__(self):
+        return f"Plan(properties={self.properties})"
+
+def plan(kb: KnowledgeBase, query: Query, program: Program):
     # Run the logic program given the query and program to produce a plan
     
     to_extract = run_engine(kb, query, program) 
     print(f"Extracted properties: {to_extract}")
 
-    return Plan(extracted_properties={})
+    return Plan(properties=to_extract)
