@@ -5,9 +5,10 @@ import dspy
 import tempfile
 
 import kvasir.logic as logic
+from kvasir.logic import Query
 from kvasir.program import Program
 
-from .utils import logger
+from .utils import logger, clean_llm_output
 
 dotenv.load_dotenv()
 
@@ -28,13 +29,16 @@ class SynthesizeProgram(dspy.Module):
     def forward(self, program: Program) -> Program:
         """Regenerate the program's source code based on the context provided."""
         regenerated_program_src = self.synthesize(input_program=program.to_lm()).output_program
+        regenerated_program_src = clean_llm_output(regenerated_program_src)
+        logger.debug(f"Regenerated program source code: {regenerated_program_src}")
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=program.language.suffix()) as temp_file:
-            temp_file.write(regenerated_program_src.encode('utf-8'))
-            temp_file_path = temp_file.name
-            regenerated_program = Program(entry=temp_file_path)
-            regenerated_program.annotations = program.annotations.copy() # TODO: Do this better
-            return regenerated_program
+        with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=program.language.suffix()) as file:
+            logger.info(f"Writing regenerated program to {file.name}")
+            file.write(regenerated_program_src)
+            file_path = file.name
+        regenerated_program = Program(entry=file_path)
+        regenerated_program.annotations = program.annotations.copy() # TODO: Do this better
+        return regenerated_program
 
 def regenerate(program, kb, query, plugins) -> Program:
     kb.add_logic(program.to_logic())

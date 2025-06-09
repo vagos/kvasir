@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, Type
 
 from .utils import logger
 
@@ -55,13 +55,13 @@ It should {'not' if not self.tobe_preserved else ''} be preserved during regener
         return f"{self.name}: {self.value}"
 
 class ProgramMeta(type):
-    registry: dict[Language, "Program"] = {}
+    registry: dict[Language, Type["Program"]] = {}
 
     def __call__(cls, entry, *args, **kwargs):
         lang = detect_language(entry)
         subclass = cls.registry.get(lang, cls)
         logger.info(
-            f"Detected language: {lang}, using subclass: {subclass.__name__} from {cls.registry}"
+            f"Detected language: {lang}, using subclass: {subclass.__name__}"
         )
         return super(ProgramMeta, subclass).__call__(entry, *args, **kwargs)
 
@@ -77,6 +77,7 @@ class Program(metaclass=ProgramMeta):
         self.entry = Path(entry)
         self.annotations = {}
         self.src = self.load()
+        assert self.src, f"Failed to load program source from {self.entry}"
 
     def to_lm(self) -> str:
         """Convert the program to a string representation for a language model."""
@@ -92,9 +93,10 @@ class Program(metaclass=ProgramMeta):
         return f"language(p, {self.language.value})."
 
     def load(self) -> str:
+        logger.debug(f"Loading program from {self.entry}")
         """Load the program src from the entry file."""
         with open(self.entry, "r") as file:
-            return file.read()
+            return file.read().strip()
 
     def save(self, output):
         """Save the program src to the output file."""
@@ -106,3 +108,15 @@ class Program(metaclass=ProgramMeta):
 
     def __getitem__(self, key):
         return self.annotations.get(key, None)
+
+
+# Language-specific programs
+class JavaScriptProgram(Program):
+    language = Language.JS
+
+class HaskellProgram(Program):
+    language = Language.HS
+
+# Register the language-specific programs
+ProgramMeta.registry[Language.JS] = JavaScriptProgram
+ProgramMeta.registry[Language.HS] = HaskellProgram
