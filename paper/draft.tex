@@ -121,7 +121,7 @@ specify what should remain unchanged or what must be transformed.
 Recent advances in large language models (LLMs) have shown great promise in
 program synthesis and transformation tasks.
 Yet LLMs suffer from several well-documented limitations:
-they struggle with negative reasoning or the proof of absence properties, their outputs often over-align with input patterns—making
+they struggle with negative reasoning or the proof of absence properties, their outputs often over-align with input patterns---making
 them vulnerable to adversarial or malformed prompts, and it
 remains difficult to enforce rich semantic or domain-specific constraints on
 generated code.
@@ -386,18 +386,203 @@ function getAlbumsByArtist(db, artist) {
 % \heading{Key Results}
 % \sys is able to effectively transform programs across a variety goals.
 
-\section{Component Interface}
+\section{\sys Design}
 
-\sys adaptor, logic engine, and verifier components
-are designed to be extensible.
-These can be written in the form of plugins.
-Adding a new to-be-preserved (or avoided) property involves 
-creating a new adaptor function that extracts that property from the given 
-program together with the logical pre-conditions that need to hold 
-for it to be extractable, and a new verifier function that checks whether the
-property is preserved in the regenerated program or \say{unknown}.
-Each part of the plugin can produce logical atoms or rules which are fed to the \sys 
-logical engine and can influence the regeneration process.
+\sys is a system for program regeneration: given an input program and a set of
+behavioral, structural, or syntactic properties, it synthesizes a new program
+that satisfies a specified subset of those properties. The system treats
+regeneration as a goal-driven process, guided by explicit property
+specifications and a symbolic planner that structures the search space for a
+backend synthesizer.
+At a high level, \sys operates in four phases: (1) property extraction, (2)
+plan construction, (3) program synthesis, and (4) verification. These phases
+interact through a shared representation of the program and its transformation
+goals.
+
+\heading{Property Extraction} \sys begins by analyzing the input program to
+extract a collection of properties. These may describe the program’s interface
+(\eg, exported functions), its operational constraints (\eg, disallowing
+filesystem access), or its structure (\eg, use of a particular API or
+programming idiom). While some properties are derived from generic analyses
+applicable across languages, others are tailored to the specifics of the input
+program’s language and runtime model.
+
+\heading{Plan Construction} The extracted properties, together with
+user-provided regeneration goals, are passed to a planning component. The
+planner constructs a transformation plan that specifies which properties must
+be preserved, which may be relaxed, and what target conditions must be achieved
+in the output program. This plan captures a symbolic view of the regeneration
+task and constrains the synthesis phase accordingly.
+
+\heading{Synthesis} Guided by the transformation plan, \sys synthesizes a
+candidate program intended to satisfy the specified constraints. Synthesis is
+treated as a generative process constrained by the plan’s logic---only programs
+that respect the specified properties and behavioral goals are considered valid
+candidates. This phase can incorporate both local and global reasoning about
+the structure and semantics of the output.
+
+\heading{Verification and Feedback} The final phase verifies that the
+synthesized program satisfies the required properties. If verification
+fails---due to a violated constraint or behavioral divergnce---\sys uses this
+failure as a signal to refine the plan or resample the synthesis step. This
+forms a feedback loop: planning, synthesis, and verification interact until a
+satisfactory program is produced or the system exhausts its search.
+
+\sys is designed to support small-scale regeneration tasks,
+usually function-level rewrites.
+While some components generalize across languages, others---particularly
+property extraction and transformation strategies---must be adapted to the
+syntactic and semantic characteristics of the target language.
+
+\section{Property Language and Extraction}
+
+\sys represents program characteristics as symbolic \emph{properties}, drawn from a formal language of first-order predicates. These properties describe aspects of the input program and serve as regeneration constraints for the output. They form the basis of both planning and verification.
+
+\paragraph{Property Predicates.}
+Each property is represented as a logical predicate over the program symbol $p$. Common examples include:
+\begin{itemize}
+  \item \texttt{language}$(p, \texttt{javascript})$: the input program is written in JavaScript.
+  \item \texttt{signature}$(p)$: the program exposes a well-formed function signature.
+  \item \texttt{no\_network}$(p)$: the program performs no network operations.
+\end{itemize}
+
+Properties are classified into three categories:
+\begin{itemize}
+  \item $\mathsf{goal}(X)$: the user or system requires $X$ to hold in the regenerated program.
+  \item $\mathsf{can}(X)$: the system is capable of extracting or inferring $X$ from the input.
+  \item $\mathsf{do}(X)$: $X$ is selected for enforcement and will be preserved or regenerated.
+\end{itemize}
+
+\paragraph{Planning over Properties.}
+The logic engine determines the set of active properties to enforce by solving a constrained optimization problem over $\mathsf{do}(\cdot)$. It satisfies the following constraints:
+\begin{align*}
+  \mathsf{goal}(X) &\Rightarrow \mathsf{do}(X) &\text{Goals must be satisfied} \\
+  \mathsf{do}(X) &\Leftarrow \mathsf{can}(X) &\text{Apply only extractable properties}
+\end{align*}
+
+Additionally, the system maximizes the number of enforced properties: % TODO: Explain why
+\[
+\text{maximize} \quad |\{ X \mid \mathsf{do}(X) \}|
+\]
+
+\paragraph{Plugin-Defined Rules.}
+Plugins contribute domain-specific inference rules and constraints. For example, a plugin for JavaScript-to-Haskell translation may define:
+\begin{align*}
+\mathsf{can}(\texttt{translate}_{\texttt{js} \rightarrow \texttt{hs}}(p)) & \\
+\mathsf{do}(\texttt{translate}_{\texttt{js} \rightarrow \texttt{hs}}(p)) &\Rightarrow \mathsf{do}(\texttt{language}(p, \texttt{haskell})) \\
+\mathsf{do}(\texttt{translate}_{\texttt{js} \rightarrow \texttt{hs}}(p)) &\Rightarrow \mathsf{language}(p, \texttt{javascript})
+\end{align*}
+
+Another plugin might contribute $\mathsf{can}(\texttt{signature}(p))$, indicating that the function signature can be extracted.
+
+\paragraph{Axioms and Domain Knowledge.}
+The logic engine also supports domain-wide axioms. For example:
+\[
+\mathsf{do}(\texttt{language}(p, \texttt{haskell})) \Rightarrow \mathsf{do}(\texttt{pure}(p))
+\]
+This captures the assumption that programs written in Haskell are pure by default. Such axioms enrich the reasoning process and allow inferred properties to trigger downstream constraints or synthesis behaviors.
+
+\paragraph{Extensibility.}
+\sys’s property extraction is decentralized: plugins contribute $\mathsf{can}(\cdot)$ and reasoning rules, while the core planner resolves which properties to enforce based on goals, capabilities, and global constraints. This modularity allows language-specific analyses to coexist with general-purpose reasoning in a unified planning layer.
+
+By treating properties as planning primitives, \sys unifies static analysis, user intent, and regeneration constraints in a common symbolic framework. This design enables precise and interpretable control over the regeneration process.
+
+\section{Synthesis Plan}
+
+\sys performs regeneration through a structured synthesis plan that combines symbolic reasoning over program properties with targeted, language-model-guided code generation. The system is designed to support small-scale regeneration tasks—typically at the level of individual functions—where precision and control are critical. By focusing on localized rewrites rather than wholesale program replacement, \sys enables composable transformations that scale across large codebases when applied judiciously.
+
+\paragraph{From Properties to Plan.}
+The synthesis process begins with a set of enforced properties $\{ X \mid \mathsf{do}(X) \}$ selected by the planner (§\ref{sec:property-language}). These properties reflect both user goals (e.g., removing side effects, translating to a different language) and structural characteristics of the input program that should be preserved. The planner constructs a transformation plan that specifies, for each relevant unit of code (typically a function), what constraints must hold in the regenerated version.
+
+For instance, a plan for regenerating a specific function might include:
+\begin{itemize}
+  \item $\mathsf{do}(\texttt{language}(f, \texttt{haskell}))$ — the function must be rewritten in Haskell,
+  \item $\mathsf{do}(\texttt{pure}(f))$ — the function must be side-effect-free,
+  \item $\mathsf{do}(\texttt{signature}(f))$ — the original function signature must be preserved.
+\end{itemize}
+These constraints are scoped to the transformation unit and inform the synthesis phase directly.
+
+\paragraph{LLM-Guided Regeneration.}
+Each synthesis task is delegated to a language model guided by a structured prompt. The prompt is constructed by composing fragments contributed by active plugins, each of which has access to the current plan and can contribute natural language or code examples relevant to its domain. For example:
+\begin{itemize}
+  \item A signature plugin may contribute: \emph{“The output should implement a function \texttt{normalize(str: string): string}.”}
+  \item A purity plugin may add: \emph{“Avoid all side effects, including file system or network operations.”}
+  \item A language plugin may prepend: \emph{“Translate this JavaScript function into idiomatic Haskell.”}
+\end{itemize}
+
+These fragments are combined with a representation of the input function—possibly abstracted to suppress undesirable behavior—and submitted to the LLM as a constrained regeneration task.
+
+\paragraph{Locality and Compositionality.}
+The emphasis on function-level regeneration serves two purposes. First, it limits the scope of transformation, reducing the risk of unintended behavioral changes. Second, it enables \sys to reuse synthesized components across broader program contexts, composing regenerated units into a coherent whole. This design supports partial regeneration: some functions may be left unchanged, others regenerated under different plans.
+
+\paragraph{Constraint-Guided Generation.}
+While synthesis is delegated to an LLM, the planner constrains the generation space in two key ways:
+\begin{enumerate}
+  \item The prompt reflects only valid transformations under the current plan.
+  \item Candidate outputs are verified post hoc against the enforced properties (§\ref{sec:verification}), and failures result in rejection or plan revision.
+\end{enumerate}
+This hybrid model balances flexibility with rigor: the LLM provides diversity and fluency, while the planner ensures adherence to property-based constraints.
+
+\paragraph{Incremental and Adaptive Planning.}
+If a candidate program fails verification, \sys does not blindly retry. Instead, it may refine the plan: relaxing soft constraints, prioritizing alternatives, or invoking different plugin strategies. This incremental approach avoids overfitting to invalid candidates and supports fallback mechanisms when regeneration proves difficult.
+
+In sum, the synthesis plan acts as a structured contract between logical property reasoning and generative synthesis. By operating at a localized level and under clearly scoped constraints, \sys delivers regenerations that are both controlled and scalable—when applied thoughtfully and systematically.
+
+\section{Property Verification and Feedback Loop}
+\label{sec:verification}
+
+To validate that a regenerated program satisfies the intended goals, \sys includes an explicit verification phase that checks whether the output adheres to the enforced properties in the synthesis plan. Verification serves as a structural filter: it accepts only those candidates that meet the plan’s constraints and provides feedback for refining or retrying those that do not.
+
+\paragraph{Verification as Property Checking.}
+After synthesis, \sys invokes a set of property-specific checkers. Each checker is responsible for evaluating whether a property $X$ in $\mathsf{do}(X)$ holds for the regenerated program fragment. These checkers operate at varying levels of precision—ranging from structural pattern checks to light static or symbolic analysis—and are tailored to the property type.
+
+Examples include:
+\begin{itemize}
+  \item For $\mathsf{do}(\texttt{no\_network}(f))$, the checker confirms the absence of known network APIs or imports.
+  \item For $\mathsf{do}(\texttt{signature}(f))$, the checker matches the regenerated function’s name, parameters, and arity against the extracted signature.
+  \item For $\mathsf{do}(\texttt{pure}(f))$, the checker examines control flow and side-effecting operations to detect possible violations.
+\end{itemize}
+
+Checkers are modular and contributed by plugins. Their combined results determine whether a candidate is considered valid under the current plan.
+
+\paragraph{Failure-Driven Refinement.}
+When a candidate fails verification, \sys treats this as a feedback signal. Instead of discarding the regeneration attempt wholesale, the system uses the failure to revise or re-execute the synthesis phase. This may take several forms:
+\begin{itemize}
+  \item \emph{Retrying synthesis}: A fresh LLM call with the same plan but a different generation path.
+  \item \emph{Adjusting the plan}: Relaxing soft constraints or reordering plugin hooks to prioritize more tractable properties.
+  \item \emph{Fallback handling}: If a function repeatedly fails validation, \sys may leave the original version intact or mark it for manual inspection.
+\end{itemize}
+
+This loop provides adaptability: regeneration is not expected to succeed unconditionally, but rather to proceed incrementally under interpretable, bounded failure modes.
+
+\paragraph{Partial Regeneration and Composition.}
+\sys supports regeneration at the granularity of individual functions. If only a subset of functions can be successfully regenerated under the given constraints, the remaining ones are excluded from transformation. The output program thus consists of a composition of validated regenerated units and untouched originals.
+
+This model supports practical application in real-world codebases, where partial improvement (e.g., replacing unsafe or deprecated functions) can be meaningful even without complete coverage.
+
+\paragraph{Iterative, Property-Preserving Generation.}
+The synthesis-verification loop respects the symbolic contract defined in the planning phase. At each iteration, the system attempts to generate a program fragment that satisfies the active $\mathsf{do}(\cdot)$ properties. Failed attempts lead to refinement, not abandonment. New candidates are synthesized with awareness of prior failures, either by adapting the plan or sampling more selectively.
+
+The verifier interface is designed for extensibility: new properties can introduce new checkers without modifying the core regeneration pipeline.
+
+\paragraph{Behavioral Guarantees.}
+\sys does not aim to replicate the full semantics of the input program. Instead, it focuses on regenerating code that conforms to a declarative set of constraints. When a regenerated program passes verification, it is accepted as satisfying the subset of properties represented in the current plan. The system makes no claims beyond these verified constraints.
+
+This contract-driven model supports safe, localized rewrites in domains where correctness, compatibility, or safety properties must be preserved with high confidence, even in the presence of imperfect generative models.
+
+% TODO: Move this later maybe in implementation details
+% \section{Component Interface}
+
+% \sys adaptor, logic engine, and verifier components
+% are designed to be extensible.
+% These can be written in the form of plugins.
+% Adding a new to-be-preserved (or avoided) property involves 
+% creating a new adaptor function that extracts that property from the given 
+% program together with the logical pre-conditions that need to hold 
+% for it to be extractable, and a new verifier function that checks whether the
+% property is preserved in the regenerated program or \say{unknown}.
+% Each part of the plugin can produce logical atoms or rules which are fed to the \sys 
+% logical engine and can influence the regeneration process.
 
 \section{Evaluation}
 
@@ -429,7 +614,7 @@ Benchmark                                               & Description           
 Python utilities                                        & Utilities from PyPi            & 1 & \cite{regbench2025} \\
   SSCA                                                    & Sneaky SSAs    & 3 & \cite{ev:eurosec:2022, es1, ohm2020backstabber} \\
   IOCCC                                                   & Obfuscated C code              & 2 & \cite{ioccc} \\
-Microbenchmarks                                         &          & 3    & This paper \\
+Microbenchmarks                                         &          & 3    & \\
   \hspace{.5em} \ttt{flatmap-stream}                      & Secure regeneration            &      & \cite{es1}  \\
   \hspace{.5em} \ttt{Q_rsqrt}                             & C refactoring        &      & \cite{fast_inv_sqrt}  \\
   \hspace{.5em} \textsf{MusicDB}                          & Modularization           &      & \cite{codewithsadeemusicplayer} \\
@@ -547,8 +732,9 @@ with reasoning under negation or satisfying structured constraints~\cite{xu2023l
 \sys leverages insights from both these paradigms.
 Unlike purely symbolic or purely neural approaches, it leverages LLMs within a
 constrained planning framework to guide transformations while remaining
-responsive to property-based requirements. This hybrid design aims to combine
-the expressiveness of LLMs with the controllability and robustness of symbolic
+responsive to property-based requirements.
+This design combines
+the scalability of LLM-assisted program sysnthesis with the controllability and robustness of symbolic
 reasoning. % TODO: focus on that \sys focuses on this specific problem domain
 
 \heading{Program Transformations and Refactoring}
@@ -566,7 +752,7 @@ Others automate migration via
 programming-by-example or interactive guidance \cite{gulwani2017program, le2017interactive}.
 
 Kvasir aims to generalize this landscape by treating transformations as
-goal-directed regenerations—rather than prescriptive rewrites, driven by
+goal-directed regenerations---rather than prescriptive rewrites, driven by
 properties such as program behaviors and architectural goals, expressed declaratively.
 
 \heading{Logic Programming and Constraint Solving}
