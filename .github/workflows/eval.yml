@@ -1,0 +1,37 @@
+name: Run evaluation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  run-eval:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run evaluation script
+        run: |
+          chmod +x ./scripts/eval.sh
+          ./scripts/eval.sh
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.repository.name }}-evaluation-${{ github.sha }}
+          path: results
