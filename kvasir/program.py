@@ -60,7 +60,7 @@ class ProgramMeta(type):
     def __call__(cls, entry, *args, **kwargs):
         lang = detect_language(entry)
         subclass = cls.registry.get(lang, cls)
-        logger.info(
+        logger.debug(
             f"Detected language: {lang}, using subclass: {subclass.__name__}"
         )
         return super(ProgramMeta, subclass).__call__(entry, *args, **kwargs)

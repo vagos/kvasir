@@ -89,6 +89,6 @@ def plan(kb: KnowledgeBase, query: Query, program: Program):
     # Run the logic program given the query and program to produce a plan
     
     to_extract = run_engine(kb, query, program) 
-    print(f"Extracted properties: {to_extract}")
+    logger.info(f"List of properties in the plan: {to_extract}")
 
     return Plan(properties=to_extract)

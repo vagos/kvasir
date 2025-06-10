@@ -33,7 +33,7 @@ class SynthesizeProgram(dspy.Module):
         logger.debug(f"Regenerated program source code: {regenerated_program_src}")
 
         with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=program.language.suffix()) as file:
-            logger.info(f"Writing regenerated program to {file.name}")
+            logger.debug(f"Writing regenerated program to {file.name}")
             file.write(regenerated_program_src)
             file_path = file.name
         regenerated_program = Program(entry=file_path)
@@ -44,23 +44,23 @@ def regenerate(program, kb, query, plugins) -> Program:
     kb.add_logic(program.to_logic())
     for plugin in plugins:
         if hasattr(plugin, "knowledge"):
-            logger.info(f"Adding knowledge with {plugin.__name__}")
+            logger.debug(f"Adding knowledge with {plugin.__name__}")
             plugin.knowledge(kb, program)
 
     plan = logic.plan(kb, query, program)
     logger.info(f"Generated plan: {plan}")
 
     for plugin in plugins:
-        logger.info(f"Trying to apply {plugin.__name__} to the program {program}")
+        logger.debug(f"Trying to apply {plugin.__name__} to the program {program}")
         if hasattr(plugin, "apply") and plan.does(plugin.__name__):
-            logger.info(f"Applying {plugin.__name__}")
+            logger.debug(f"Applying {plugin.__name__}")
             plugin.apply(program)
 
     program_ = synthesize(program, plan)
 
     for plugin in plugins:
         if hasattr(plugin, "verify") and plan.does(plugin.__name__):
-            logger.info(f"Verifying {program_} against {program} with {plugin.__name__}")
+            logger.debug(f"Verifying {program_} against {program} with {plugin.__name__}")
             plugin.verify(program, program_)
 
     return program_
@@ -68,8 +68,6 @@ def regenerate(program, kb, query, plugins) -> Program:
 
 def synthesize(program, plan) -> Program:
     """Synthesize a new program based on the plan."""
-
-    logger.info(f"Synthesizing program with plan: {plan}")
     synthesize = SynthesizeProgram()
     regenerated_program = synthesize(program)
     if logger.level == logging.DEBUG:
