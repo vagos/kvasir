@@ -1,0 +1,1 @@
+goal(language(p, haskell)).
