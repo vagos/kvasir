@@ -528,6 +528,65 @@ These results support the claim that \sys's planning logic---driven by explicit
 property extraction and knowledge-base reasoning---yields safer and more
 controllable transformations than prompt-only LLM-based systems.
 
+\section{Related Work}
+
+\heading{Program Synthesis}
+Program synthesis research spans a rich space of techniques.
+Classical techniques emphasize correctness and
+interpretability, synthesizing programs from specifications~\cite{alur2013syntax, feser2015synthesizing, gulwani2011automating},
+type constraints \cite{polikarpova2016program},
+or examples \cite{jha2010oracle, raza2018disjunctive, singh2016blinkfill}.
+These works often target narrowly
+defined domains such as string manipulation~\cite{harp:ccs:2021} or data migration
+\cite{yaghmazadeh2018automated} and focus on ensuring provable guarantees.
+More recently, LLM-based methods~\cite{austin2021program, chen2021evaluating}
+explore broad-domain code generation via prompt-based conditioning.
+While remarkably flexible, these models are prone to hallucination and struggle
+with reasoning under negation or satisfying structured constraints~\cite{xu2023llmfoolitselfpromptbased, wu2023deceptpromptexploitingllmdrivencode,jiang2024llmsdreamelephantswhen,hwang2024thinkpinkelephant}.
+
+\sys leverages insights from both these paradigms.
+Unlike purely symbolic or purely neural approaches, it leverages LLMs within a
+constrained planning framework to guide transformations while remaining
+responsive to property-based requirements. This hybrid design aims to combine
+the expressiveness of LLMs with the controllability and robustness of symbolic
+reasoning. % TODO: focus on that \sys focuses on this specific problem domain
+
+\heading{Program Transformations and Refactoring}
+The evolution and maintenance of software systems often involve transformations
+such as refactoring, translation, or security hardening. Foundational work on
+refactoring~\cite{Fowler99} and its taxonomy~\cite{Mens04} characterizes the
+space of behavior-preserving modifications. More recent perspectives emphasize
+developer experience and usability, particularly in the context of APIs~\cite{Myers16}.
+
+Tools in this space have largely operated via syntax-tree transformations or
+domain-specific templates. Verification-based methods such as \textsc{Dafny}
+\cite{Leino10} and \textsc{CBMC} \cite{Clarke04} ensure functional correctness
+but require heavy formalization.
+Others automate migration via
+programming-by-example or interactive guidance \cite{gulwani2017program, le2017interactive}.
+
+Kvasir aims to generalize this landscape by treating transformations as
+goal-directed regenerations—rather than prescriptive rewrites, driven by
+properties such as program behaviors and architectural goals, expressed declaratively.
+
+\heading{Logic Programming and Constraint Solving}
+Logic programming has long served as a foundation for reasoning in programming
+tools, offering a declarative model for expressing properties and constraints.
+Answer Set Programming (ASP), in particular, provides a rich framework for
+expressing defaults, exceptions, and optimization via stable model semantics
+\cite{Gelfond_2000, Gelfond_2002, Eiter_2009}. ASP has been used for
+declarative program analysis \cite{benton2007interactive}, automated planning
+\cite{nguyen2020explainable, son2022answersetplanningsurvey}, and knowledge
+representation in verification and synthesis pipelines.
+
+\sys uses ASP as its planning back-end for the planning, decision-making
+process, while also uses its straighftorward optimization capabilities.
+For each transformation task, \sys formulates the property-satisfaction problem as a logic query and uses an ASP solver to
+synthesize a feasible transformation plans.
+This enables global reasoning across program components and enforces
+user-specified constraints that are difficult for neural models to respect.
+In addition, it offers a level of explainability that is useful in case transformations end up incorrect.
+
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
 
