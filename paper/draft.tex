@@ -683,26 +683,6 @@ We consider two criteria for each regenerated program:
 \end{table}
 
 \sys consistently satisfies more of the declared properties while avoiding unintended behaviors. For instance, in the \texttt{flatmap-stream} benchmark, GPT-4 often preserved malicious side effects when the code appeared innocuous, whereas \sys generated provably pure rewrites by treating the source as untrusted and grounding regeneration in I/O behavior alone.
-
-\heading{Planning overhead}
-We measure the time taken by \sys's logic engine to select the minimal set of
-properties required to satisfy each query. 
-\begin{table}[h]
-  \centering
-  \caption{Planning overhead: time taken by \sys's logic engine to compute minimal property set.}
-  \begin{tabular}{lcc}
-    \toprule
-    Benchmark & Properties Considered & $T_{\text{plan}}$ (ms) \\
-    \midrule
-    Rosetta Code & \xxx & \xxx \\
-    npm Utilities & \xxx & \xxx \\
-    Python Utilities & \xxx & \xxx \\
-    SSCA & \xxx & \xxx \\
-    Microbenchmarks & \xxx & \xxx \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
 Across all benchmarks, the planning step completes in under \xxx ms on average.
 % TODO: re-add this
 % adding negligible latency compared to synthesis time. Moreover, by minimizing
