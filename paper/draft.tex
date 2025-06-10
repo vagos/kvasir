@@ -103,15 +103,32 @@
 \section{Introduction}
 
 Modern software systems are in constant flux.
-Developers refactor legacy code,
-adapt libraries to evolving APIs, translate modules across programming
-languages, and harden components against emerging security threats.
-Each transformation demands a careful balance between preserving intended
-functionality and satisfying new goals such as modularity, performance, or
-safety.
-While these transformations are conceptually simple, they are often
-brittle, time-consuming, and require deep expertise.
+Developers refactor legacy code~\cite{Fowler99,Mens04},
+adapt libraries to evolving APIs,
+translate modules across programming languages,
+and harden components against emerging security threats.
+These transformations are brittle, time-consuming, and may require deep expertise,
+even if the can be conceptually simple.
 % TODO: Introduce LLMs around here
+
+Existing tools help with narrow cases---transpilers translate syntax, linters
+enforce style, verifiers check correctness---but they fall short when
+transformations must preserve or alter semantic properties across diverse goals
+and program representations. 
+Worse, developers often lack precise ways to
+specify what should remain unchanged or what must be transformed.
+
+Recent advances in large language models (LLMs) have shown great promise in
+program synthesis and transformation tasks.
+Yet LLMs suffer from several well-documented limitations:
+they struggle with negative reasoning or the proof of absence properties, their outputs often over-align with input patterns—making
+them vulnerable to adversarial or malformed prompts, and it
+remains difficult to enforce rich semantic or domain-specific constraints on
+generated code.
+As a result, while LLM-backed tools can
+accelerate prototyping, developers still lack reliable ways to verify or steer
+their transformations to meet precise correctness or security requirements.
+
 
 % Mention that:
 % 1. They have shown great promise in program synthesis + 
@@ -121,14 +138,7 @@ brittle, time-consuming, and require deep expertise.
 %    user cannot easily set requirements or say output should be within a range of
 %    acceptance
 
-Existing tools help with narrow cases---transpilers translate syntax, linters
-enforce style, verifiers check correctness---but they fall short when
-transformations must preserve or alter semantic properties across diverse goals
-and program representations. 
-Worse, developers often lack precise ways to
-specify what should remain unchanged or what must be transformed.
-
-This paper present \sys, a system for scalable program regeneration.
+This paper present \sys, a system for \emph{scalable program regeneration}.
 \sys allows users
 to express transformation goals declaratively, as logical constraints over
 program properties---such as input/output behavior, side-effect freedom, target
@@ -153,11 +163,13 @@ logical conflict analysis.
 The paper's contributions are:
 \begin{itemize}
  \item A declarative interface and accompanying DSL for program transformation, allowing users to express semantic goals as logical queries over properties of the regenerated program;
- \item A property-aware transformation framework, combining logic-based reasoning, minimal extraction, and LLM-backed synthesis;
- % TODO: Implementation of sys?
+ \item A property-aware transformation framework, combining logic-based reasoning, and LLM-backed synthesis;
+ \item An empirical evaluation demonstrating \sys’s effectiveness and scalability across transformation scenarios.
 \end{itemize}
 
-By coupling logic-driven reasoning with modern synthesis tools, \sys enables a new class of transformation workflows---ones that are expressive, verifiable, and adaptable across software tasks.
+By coupling logic-driven reasoning with modern synthesis tools, \sys enables a
+new class of transformation workflows---ones that are expressive, to some extent verifiable,
+and adaptable across software tasks.
 
 \section{Example}
 \label{sec:example}
