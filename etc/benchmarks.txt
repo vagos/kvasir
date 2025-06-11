@@ -2,3 +2,6 @@ IOCCC
   https://www.craig-wood.com/nick/articles/ioccc-2012-mersenne-prime-checker 
   https://www.nathanotterness.com/2021/04/obfuscated_c_2020.html
   https://www.ioccc.org/2000/primenum/index.html
+
+SSCAs
+  https://github.com/dominictarr/event-stream/issues/116#issuecomment-441746370
