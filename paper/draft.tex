@@ -754,6 +754,35 @@ This enables global reasoning across program components and enforces
 user-specified constraints that are difficult for neural models to respect.
 In addition, it offers a level of explainability that is useful in case transformations end up incorrect.
 
+\section{Discussion and Limitations}
+
+\sys is designed to support property-guided regeneration of program fragments, with a particular focus on function-level rewrites. Its strength lies in combining symbolic reasoning and generative synthesis in a modular and interpretable framework. However, this design comes with inherent tradeoffs, which we discuss below.
+
+\paragraph{Scope of Regeneration.}
+\sys is not intended for whole-program synthesis or full language migration. It operates most effectively when applied to localized program units—such as individual functions, methods, or modules—where the intended behavior is reasonably self-contained and describable via explicit properties. Applying \sys to larger-scale transformations may yield incomplete results, or expose coordination challenges not addressed by the current system.
+
+\paragraph{Dependence on Property Specification.}
+The system relies heavily on the quality and granularity of extracted or declared properties. In cases where desired behaviors cannot be easily expressed using available predicates, or where plugins fail to extract meaningful constraints, the regeneration plan may be under-constrained, leading to brittle or incorrect outputs. The framework is extensible, but each new property class requires new reasoning rules, extractors, and verifiers.
+
+\paragraph{Trust Model and Correctness.}
+\sys does not provide formal guarantees of semantic equivalence to the original program. Instead, correctness is defined relative to a set of enforced properties. This means that correctness is only as strong as the property definitions and associated checkers. In the presence of underspecified or unverifiable goals, regenerated code may exhibit unanticipated behavior—even if it passes all checks.
+
+\paragraph{LLM Limitations.}
+The generative synthesis phase is subject to the inherent variability and failure modes of large language models. These include hallucinations, sensitivity to prompt phrasing, and inconsistency under minor input changes. While \sys mitigates these risks through constraint-based planning and post-hoc verification, it cannot eliminate them entirely. In cases where no satisfactory candidate is found, regeneration may fail or require manual intervention.
+
+\paragraph{Language-Specific Support.}
+Although some components of \sys are language-agnostic (e.g., logic-based planning), others—particularly extraction and verification plugins—are not. Supporting a new language requires implementing language-specific analyzers and constraints. This modularity is deliberate, but it does limit out-of-the-box generality.
+
+\paragraph{Strategic Application.}
+In practice, \sys is best used as a surgical tool: to rewrite high-risk, deprecated, or poorly understood code under explicit constraints. Its effectiveness comes from focusing effort on narrow slices of functionality where correctness matters and regeneration goals are clear. Broad, untargeted application is unlikely to yield high-quality results.
+
+\paragraph{Future Directions.}
+Several extensions could improve \sys’s capabilities. These include richer property languages (e.g., temporal or dataflow properties), tighter integration with formal verification tools, learning-guided property extraction, and cross-component reasoning for coordinated rewrites. Additionally, integrating counterfactual generation techniques could help explain why certain regeneration goals are infeasible or conflicting.
+
+Overall, \sys offers a flexible framework for controlled regeneration, but its effectiveness depends on the specificity of goals, the availability of property logic, and the scope of the transformation task. Its design favors composability and clarity over full automation, aiming to serve as a building block in broader refactoring, auditing, or hardening pipelines.
+
+\section{Conclusion}
+
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
 
