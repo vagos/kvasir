@@ -32,7 +32,8 @@ def main(input, query, output, verbose):
     logger.debug(f"Loaded program: {program}")
 
     program_ = regenerate(program, kb, query, plugins)
-    logger.debug(f"Tranformed program {program} to {program_}")
+
+    print(f"Trasnformed\n\t{program}\ninto\n\t{program_}")
 
     program_.entry = output
     program_.save(output)
