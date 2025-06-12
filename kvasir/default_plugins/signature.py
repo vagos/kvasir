@@ -1,9 +1,9 @@
 import re
 
-from kvasir.logic import KnowledgeBase
 import kvasir.program
 from kvasir.hooks import hookimpl
 from kvasir.program import Property
+
 
 class Signature(Property):
     """

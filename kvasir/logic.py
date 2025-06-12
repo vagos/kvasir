@@ -1,8 +1,12 @@
-from typing import Any, Dict, Set
+from typing import Dict
+
 from clingo import Control
-from .utils import logger
-from .program import Program, Property, Action
+
 from kvasir import utils
+
+from .program import Action, Program
+from .utils import logger
+
 
 class Query:
     def __init__(self, entry: str):
@@ -95,7 +99,7 @@ class Plan:
         """Check if the plan includes actions for the given plugin."""
         # Handle module names
         property_name = utils.plugin_basename(property_name)
-        return property_name in self.properties.keys()
+        return property_name in self.properties
 
     def __repr__(self):
         return f"Plan(to_extract={self.properties})"

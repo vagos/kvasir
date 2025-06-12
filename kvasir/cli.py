@@ -2,11 +2,11 @@ import logging
 
 import click
 
+from .logic import KnowledgeBase, Query
 from .plugins import load_plugins
 from .program import Program
 from .synth import regenerate
 from .utils import logger
-from .logic import KnowledgeBase, Query
 
 
 @click.command()

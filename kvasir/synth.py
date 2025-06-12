@@ -1,16 +1,15 @@
-import logging
 import copy
+import logging
+import tempfile
 
 import dotenv
 import dspy
-import tempfile
 
 import kvasir.logic as logic
-from kvasir.logic import Query
-from kvasir.program import Program, Action
-
-from .utils import logger, clean_llm_output
 from kvasir import utils
+from kvasir.program import Action, Program
+
+from .utils import clean_llm_output, logger
 
 dotenv.load_dotenv()
 

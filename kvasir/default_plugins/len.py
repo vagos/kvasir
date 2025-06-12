@@ -1,6 +1,7 @@
 from kvasir.hooks import hookimpl
 from kvasir.program import Property
 
+
 class ProgramLength(Property):
     """
     Represents the length of a program's source code.

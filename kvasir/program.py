@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any, Type
-import inspect
 
 from .utils import logger
 
@@ -95,7 +94,7 @@ class Program(metaclass=ProgramMeta):
         """Convert the program to a string representation for a language model."""
         repr = ""
         repr += f"The program is written in {self.language}.\n"
-        for name, prop in self.annotations.items():
+        for _name, prop in self.annotations.items():
             repr += prop.to_lm()
 
         return repr

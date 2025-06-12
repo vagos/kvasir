@@ -3,7 +3,7 @@ import pkgutil
 
 import pluggy
 
-from . import hooks, program
+from . import hooks
 
 
 def load_plugins():

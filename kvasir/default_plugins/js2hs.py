@@ -1,5 +1,5 @@
 from kvasir.hooks import hookimpl
-from kvasir.program import Program, Language
+from kvasir.program import Language
 
 
 @hookimpl
