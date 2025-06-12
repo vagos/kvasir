@@ -13,7 +13,7 @@ class ProgramLength(Property):
 
 @hookimpl
 def apply(program):
-    program["len"] = ProgramLength("len", len(program.src))
+    program["len"] = ProgramLength("len", program.src.count("\n") + 1)
 
 @hookimpl
 def knowledge(kb, program):
