@@ -37,9 +37,15 @@ class KnowledgeBase:
                 if atom.match("do", 1):
                     name = atom.arguments[0].name
                     r[name] = Action.PRESERVE
+                if atom.match("-do", 1):
+                    name = atom.arguments[0].name
+                    r[name] = Action.ELIMINATE
                 if atom.match("do_min", 1):
                     name = atom.arguments[0].name
                     r[name] = Action.MINIMIZE
+                if atom.match("do_max", 1):
+                    name = atom.arguments[0].name
+                    r[name] = Action.MAXIMIZE
             results.append(r)
 
         with self.ctl.solve(yield_=True) as handle:
