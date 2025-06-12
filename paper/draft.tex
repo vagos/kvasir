@@ -103,33 +103,24 @@
 
 \section{Introduction}
 
-Modern software systems are in constant flux.
-Developers refactor legacy code~\cite{Fowler99,Mens04},
-adapt libraries to evolving APIs,
-translate modules across programming languages,
-and harden components against emerging security threats.
-These transformations are brittle, time-consuming, and may require deep expertise,
-even if the can be conceptually simple.
+% insights: modular programs, advances in LLMs, need for a strictly declarative interface
+
+Modern software systems evolve constantly.
+Developers refactor legacy code~\cite{Fowler99,Mens04,facebook2010redesigns,dropbox2014syncengine},
+adapt libraries to changing APIs~\cite{dig2005role,kula2017empiricalstudyimpactrefactoring},
+translate components across languages~\cite{manzoor_cli_python,gaultier_rewrite_cpp},
+and patch security vulnerabilities~\cite{ikegami2022userefactoringsecurityvulnerability,schneier2013security_vulnerabilities}.
+These transformations, are often brittle, time-consuming, and require significant expertise.
+
 % TODO: Introduce LLMs around here
-
-Existing tools help with narrow cases---transpilers translate syntax, linters
-enforce style, verifiers check correctness---but they fall short when
-transformations must preserve or alter semantic properties across diverse goals
-and program representations. 
-Worse, developers often lack precise ways to
-specify what should remain unchanged or what must be transformed.
-
-Recent advances in large language models (LLMs) have shown great promise in
-program synthesis and transformation tasks.
-Yet LLMs suffer from several well-documented limitations:
-they struggle with negative reasoning or the proof of absence properties, their outputs often over-align with input patterns---making
-them vulnerable to adversarial or malformed prompts, and it
-remains difficult to enforce rich semantic or domain-specific constraints on
-generated code.
-As a result, while LLM-backed tools can
-accelerate prototyping, developers still lack reliable ways to verify or steer
-their transformations to meet precise correctness or security requirements.
-
+Recent advances in large language models (LLMs) have opened new possibilities for automating code transformation tasks.
+LLMs can translate code across languages~\cite{ou2025enhancingllmbasedcodetranslation},
+refactor complex modules~\cite{ziftci2025migrating},
+and even generate entire components from scratch~\cite{huynh2025largelanguagemodelscode}.
+This flexibility has positioned them as attractive tools for software evolution.
+However, their outputs are shaped by surface-level patterns in the input~\cite{yang2025evaluatinggeneralizationcapabilitieslarge}.
+They struggle with negative constraints (\eg \say{do not use this interface}), often overfit to spurious input cues, and lack mechanisms for enforcing precise behavioral properties on the generated code~\cite{xu2023llmfoolitselfpromptbased, wu2023deceptpromptexploitingllmdrivencode,jiang2024llmsdreamelephantswhen,hwang2024thinkpinkelephant,roh2025breakthechainreasoningfailuresllms}.
+As a result, while LLMs can accelerate prototyping, developers remain unable to reliably steer or verify their correctness.
 
 % Mention that:
 % 1. They have shown great promise in program synthesis + 
@@ -139,38 +130,49 @@ their transformations to meet precise correctness or security requirements.
 %    user cannot easily set requirements or say output should be within a range of
 %    acceptance
 
+Despite their power, LLMs and associated tooling remain fundamentally
+procedural and ad hoc: developers must prompt and steer them indirectly, often
+relying on brittle heuristics or manual trial-and-error to align outputs with
+intent.
+This process is brittle, hard to audit, and difficult to integrate into systematic workflows.
+Bridging this gap calls for a declarative interface for transformation, one that allows explicit semantic constraints and transformation goals, and supports reasoning about their satisfaction.
+
 This paper present \sys, a system for \emph{scalable program regeneration}.
 \sys allows users
 to express transformation goals declaratively, as logical constraints over
 program properties---such as input/output behavior, side-effect freedom, target
-language, trace equivalence, or modular structure. Given a source program and
+language, trace equivalence, or modular structure.
+Given a source program and
 such a query, \sys extracts a minimal set of relevant properties, guided by a
 logic engine and a domain-specific knowledge base, and synthesizes a new
 program that satisfies the desired constraints.
 
-At the core of \sys is a property-guided synthesis pipeline: the system casts
-transformation as a constrained synthesis problem, minimizing extraction effort
-while ensuring semantic alignment. If no valid program exists under the given
-constraints, \sys provides informative failure explanations derived from
-logical conflict analysis.
+The design of \sys is shaped by three key insights.
+First, modern software is highly modular, making it feasible to reason about transformations at the granularity of individual components or functions.
+Second, the program regeneration setting provides a unique advantage: the original program serves as a concrete ground-truth, enabling semantic comparisons and verification of the transformed output, something impossible in traditional synthesis tasks.
+Third, the underlying synthesis technology---particularly LLMs---is evolving rapidly; a declarative interface allows this progress to be harnessed without disrupting the framework's end user.
 
-\sys is evaluated across a diverse set of transformation tasks, including:
-	Security hardening, by stripping latent malicious behavior while preserving intended functionality;
-	Cross-language translation, by regenerating semantically equivalent programs in new languages;
-	Idiomatic rewriting, by producing safer and more portable variants of legacy code;
-	Modular decomposition, by restructuring monolithic components into composable parts.
-  % TODO: Results?
+Guided by these insights, \sys casts transformation as a constrained synthesis problem.
+At its core is a property-driven pipeline: users express goals as logical constraints over semantic properties, such as input/output behavior, side-effect freedom, target language, or structural modularity.
+\sys extracts a set of relevant properties, using a logic engine and domain-specific knowledge base, and synthesizes a new program that satisfies the specified constraints.
+If no such program exists, \sys returns failure explanations derived from the unsatisfiable core.
 
-The paper's contributions are:
+% Leverages insights: (1) modern applications highly modular (2) the problem of LLM-assisted program transformations needs to be transformed in a way that a ground truth is readily available: the original program
+% (3) towards the generality and longevity of this solution the interface needs to be purely declarative, to allow independent progress of the underlying comopnents to give automatic benefits
+
+The paper's key contributions are:
 \begin{itemize}
  \item A declarative interface and accompanying DSL for program transformation, allowing users to express semantic goals as logical queries over properties of the regenerated program;
  \item A property-aware transformation framework, combining logic-based reasoning, and LLM-backed synthesis;
  \item An empirical evaluation demonstrating \sys’s effectiveness and scalability across transformation scenarios.
 \end{itemize}
 
-By coupling logic-driven reasoning with modern synthesis tools, \sys enables a
-new class of transformation workflows---ones that are expressive, to some extent verifiable,
-and adaptable across software tasks.
+\sys is evaluated across a diverse set of transformation tasks, including:
+	Security hardening, by stripping latent malicious behavior while preserving intended functionality;
+	Cross-language translation, by regenerating semantically equivalent programs in new languages;
+	Idiomatic rewriting, by producing safer and more portable variants of legacy code;
+	Modular decomposition, by restructuring monolithic components into composable parts.
+\sys is able to effectively regenerate programs across these tasks, producing high-quality outputs that satisfy user-specified constraints while also discovering transformation strategies that were not immediately obvious to the authors.
 
 \section{Example}
 \label{sec:example}
@@ -351,7 +353,7 @@ Having the database initialization being in the same function as
 the database access has architectural and performance implications.
 In addition, there exist systems that can benefit from further decomposition
 of an application towards automatic distribution, parallelization or security~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
-\begin{wrapfigure}[6]{r}{.7\columnwidth}
+\begin{wrapfigure}[5]{r}{.7\columnwidth}
   \vspace{-10pt}
   \begin{minted}{prolog}
 db('music.db').
