@@ -6,8 +6,8 @@ import dotenv
 import dspy
 
 import kvasir.logic as logic
-from kvasir.logic import Query
 from kvasir import utils
+from kvasir.logic import Query
 from kvasir.program import Action, Program
 
 from .utils import clean_llm_output, logger
