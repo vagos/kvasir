@@ -71,7 +71,9 @@ def regenerate(program, kb, query, plugins) -> Program:
                 plugin.transform(program)
 
         for property, action in plan.properties.items():
-            program[property].set_action(action)
+            if property not in program.annotations:
+                continue
+            program.annotations[property].set_action(action)
 
         program_ = synthesize(program, plan)
 
