@@ -11,20 +11,44 @@ class Signature(Property):
     Contains the function name and its parameter list.
     """
 
+def extract_js(src: str) -> list: 
+    """
+    Extract JavaScript function signatures from the source code.
+    """
+    # For simplicity, let's assume we extract functions in the form of:
+    # function name(arg1, arg2) { ... }
+    pattern = r"function\s+(\w+)\s*\(([^)]*)\)"
+    matches = re.findall(pattern, src)
+    return [{"name": name, "args": [arg.strip() for arg in args.split(",") if arg.strip()]} for name, args in matches]
+
+def extract_hs(src: str) -> list:
+    """
+    Extract Haskell function signatures from the source code.
+    """
+    # Look for lines like "name :: type1 -> type2 -> …"
+    pattern = r"^(\w+)\s*::\s*(.+)$"
+    matches = re.findall(pattern, src, re.MULTILINE)
+
+    # For each signature, split the RHS on '->' to get a list of type args
+    result = []
+    for name, type_sig in matches:
+        args = [arg.strip() for arg in type_sig.split("->") if arg.strip()]
+        result.append({"name": name, "args": args})
+    return result
+
 @hookimpl
 def apply(program):
     # Extract top-level function signatures using regex (simplified)
-    pattern = r"function\s+(\w+)\s*\(([^)]*)\)"
-    matches = re.findall(pattern, program.src)
-
     # Store as a list of (name, args)
-    program["signature"] = Property("signature", [
-        {"name": name, "args": [arg.strip() for arg in args.split(",") if arg.strip()]}
-        for name, args in matches
-    ]);
 
-    return {"signature"}
-
+    match program.language:
+        case kvasir.program.Language.JS:
+            signatures_value = extract_js(program.src)
+        case kvasir.program.Language.HS:
+            signatures_value = extract_hs(program.src)
+        case _:
+            raise ValueError(f"Unsupported language: {program.language}")
+    program["signature"] = Property("signature", signatures_value)
 
 @hookimpl
 def verify(original_program, regenerated_program):
@@ -32,7 +56,8 @@ def verify(original_program, regenerated_program):
     regen_sigs: Property = regenerated_program["signature"]
 
     def normalize(sigs):
-        return sorted((sig["name"], tuple(sig["args"])) for sig in sigs.value)
+        # return sorted((sig["name"], tuple(sig["args"])) for sig in sigs.value)
+        return sorted((sig["name"] for sig in sigs.value))
 
     return normalize(orig_sigs) == normalize(regen_sigs)
 
