@@ -33,11 +33,18 @@ class KnowledgeBase:
                 if atom.match("do", 1):
                     name = atom.arguments[0].name
                     r[name] = Action.PRESERVE
+                if atom.match("do_min", 1):
+                    name = atom.arguments[0].name
+                    r[name] = Action.MINIMIZE
             results.append(r)
 
         with self.ctl.solve(yield_=True) as handle:
             for model in handle:
                 on_model(model)
+
+        if not results:
+            logger.error("Plan is unsatisfiable.")
+            exit(1)
 
         return results[-1]
 
@@ -47,18 +54,22 @@ class KnowledgeBase:
 def run_engine(kb: KnowledgeBase, query: Query, program: Program) -> Dict[str, Action]:
     code = (
         """
-do(X) :- goal(X).
+% Don't change the language unless given as a goal.
+:- do(language(p, X)), language(p, Y), X != Y, not goal(language(p, X)).
 
-{ do(X) } :- can(X).
+{ do(X) } :- can(X), not goal_min(X).
+{ do_min(X) } :- can(X).
 
 ndo(N) :- N = #count { X : do(X) }.
 #maximize { N : ndo(N) }.
 
 :- goal(X), not do(X).
+:- goal_min(X), not do_min(X).
 
 :- do(language(P, L1)), do(language(P, L2)), L1 != L2. % A program has one language.
 
 #show do/1.
+#show do_min/1.
         """
     )
 
