@@ -6,6 +6,7 @@ import dotenv
 import dspy
 
 import kvasir.logic as logic
+from kvasir.logic import Query
 from kvasir import utils
 from kvasir.program import Action, Program
 
@@ -41,7 +42,7 @@ class SynthesizeProgram(dspy.Module):
         regenerated_program = Program(entry=file_path)
         return regenerated_program
 
-def regenerate(program, kb, query, plugins) -> Program:
+def regenerate(program: Program, kb: logic.KnowledgeBase, query: Query, plugins) -> Program:
     logger.debug(f"Plugins loaded: {[plugin.__name__ for plugin in plugins]}")
 
     program = copy.deepcopy(program)
