@@ -15,6 +15,7 @@ from kvasir import utils
 dotenv.load_dotenv()
 
 lm = dspy.LM('openai/gpt-4o-mini')
+local_lm = dspy.LM('ollama_chat/codellama:7b', api_base='http://localhost:11434', api_key='')
 dspy.configure(lm=lm)
 
 class RegenerateProgram(dspy.Signature):
