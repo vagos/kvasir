@@ -23,5 +23,12 @@ def clean_llm_output(text: str) -> str:
         lines = lines[:-1]
     return "\n".join(lines)
 
+def plugin_basename(name: str) -> str:
+    """
+    Extract the base name of a plugin from its full name.
+    This is used to identify the plugin without its module path.
+    """
+    return name.split('.')[-1] if '.' in name else name
+
 # Disable by default
 logger.setLevel(logging.CRITICAL + 1)
