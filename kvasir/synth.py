@@ -70,6 +70,9 @@ def regenerate(program, kb, query, plugins) -> Program:
                 logger.debug(f"Transforming program with {plugin.__name__}")
                 plugin.transform(program)
 
+        for property, action in plan.properties.items():
+            program[property].set_action(action)
+
         program_ = synthesize(program, plan)
 
         for plugin in used_plugins.values():
@@ -93,13 +96,9 @@ def regenerate(program, kb, query, plugins) -> Program:
                 case Action.MAXIMIZE:
                     ok = program_[property] > program[property]
                     logger.debug(f"Maximizing property {property}: {ok}")
-                    # check if program_[property.name] > program[property.name]
                 case Action.MINIMIZE:
                     ok = program_[property] < program[property]
                     logger.debug(f"Minimizing property {property}: {ok}")
-                    # check if program_[property.name] < program[property.name]
-                case _:
-                    logger.warning(f"Unknown action {property.action} for property {property.name}")
 
         program, program_ = program_, program
         break
