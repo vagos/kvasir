@@ -36,6 +36,39 @@ def extract_hs(src: str) -> list:
         result.append({"name": name, "args": args})
     return result
 
+def extract_c(src: str) -> list:
+    """
+    Extract C function signatures (both declarations and definitions)
+    from the source code.
+    Returns a list of dicts with keys: name, return_type, args.
+    """
+    # Match:
+    #   <return-type> <funcname>(<arg-list>) ;
+    # or
+    #   <return-type> <funcname>(<arg-list>) {
+    pattern = r"""
+      ([_a-zA-Z]\w*(?:\s+[\w\*\_]+)*)   # return type (e.g. "float", "const char *")
+      \s+
+      ([_a-zA-Z]\w*)                    # function name
+      \s*
+      \(
+        ([^)]*)                         # argument list (anything but ')')
+      \)
+      \s*
+      (?:;|\{)                          # then either a ; (declaration) or { (definition)
+    """
+    matches = re.findall(pattern, src, re.VERBOSE|re.MULTILINE)
+
+    functions = []
+    for return_type, name, args in matches:
+        arg_list = [arg.strip() for arg in args.split(",") if arg.strip()]
+        functions.append({
+            "return_type": return_type.strip(),
+            "name": name,
+            "args": arg_list
+        })
+    return functions
+
 @hookimpl
 def apply(program):
     # Extract top-level function signatures using regex (simplified)
@@ -46,6 +79,8 @@ def apply(program):
             signatures_value = extract_js(program.src)
         case kvasir.program.Language.HS:
             signatures_value = extract_hs(program.src)
+        case kvasir.program.Language.C:
+            signatures_value = extract_c(program.src)
         case _:
             raise ValueError(f"Unsupported language: {program.language}")
     program["signature"] = Property("signature", signatures_value)

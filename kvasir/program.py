@@ -10,6 +10,7 @@ from .utils import logger
 class Language(Enum):
     JS = "javascript"
     HS = "haskell"
+    C = "c"
 
     def __str__(self):
         return self.value.capitalize()
@@ -21,16 +22,20 @@ class Language(Enum):
                 return ".js"
             case Language.HS:
                 return ".hs"
+            case Language.C:
+                return ".c"
             case _:
                 raise ValueError(f"Unsupported language: {self.value}")
 
 
-def detect_language(entry):
+def detect_language(entry) -> Language:
     """Detect the programming language based on the file extension."""
     if entry.endswith(".js"):
         return Language.JS
     elif entry.endswith(".hs"):
         return Language.HS
+    elif entry.endswith(".c"):
+        return Language.C
     else:
         raise ValueError(f"Unsupported file type: {entry}")
 
@@ -124,6 +129,10 @@ class JavaScriptProgram(Program):
 class HaskellProgram(Program):
     language = Language.HS
 
+class CProgram(Program):
+    language = Language.C
+
 # Register the language-specific programs
 ProgramMeta.registry[Language.JS] = JavaScriptProgram
 ProgramMeta.registry[Language.HS] = HaskellProgram
+ProgramMeta.registry[Language.C] = CProgram
