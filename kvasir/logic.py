@@ -1,7 +1,8 @@
-from typing import Any, Dict
+from typing import Any, Dict, Set
 from clingo import Control
 from .utils import logger
-from .program import Program
+from .program import Program, Property, Action
+from kvasir import utils
 
 class Query:
     def __init__(self, entry: str):
@@ -15,7 +16,7 @@ class KnowledgeBase:
         self.ctl = Control([])
         self.program = ""
 
-    def solve(self, query: Query):
+    def solve(self, query: Query) -> Dict[str, Action]:
         """Solve the query using the knowledge base."""
         results = []
 
@@ -27,10 +28,11 @@ class KnowledgeBase:
         self.ctl.ground([("base", [])])
 
         def on_model(model):
-            r = []
+            r = {}
             for atom in model.symbols(shown=True):
                 if atom.match("do", 1):
-                    r.append(atom.arguments[0].name)
+                    name = atom.arguments[0].name
+                    r[name] = Action.PRESERVE
             results.append(r)
 
         with self.ctl.solve(yield_=True) as handle:
@@ -42,7 +44,7 @@ class KnowledgeBase:
     def add_logic(self, logic: str, comment: str=""):
         self.program += logic + " " + (f"% {comment}" if comment else "") + '\n'
 
-def run_engine(kb: KnowledgeBase, query: Query, program: Program) -> Dict[str, Any]:
+def run_engine(kb: KnowledgeBase, query: Query, program: Program) -> Dict[str, Action]:
     code = (
         """
 do(X) :- goal(X).
@@ -62,11 +64,11 @@ ndo(N) :- N = #count { X : do(X) }.
 
     kb.add_logic(code)
 
-    return { k: True for k in kb.solve(query)}
+    return kb.solve(query)
 
 class Plan:
-    def __init__(self, properties: Dict[str, Any]):
-        self.properties: Dict[str, Any] = properties
+    def __init__(self, properties: Dict[str, Action]):
+        self.properties: Dict[str, Action] = properties
         self.history = []  # e.g., list of prior generations / decisions
 
     def reconfigure(self, new_info) -> "Plan":
@@ -74,21 +76,28 @@ class Plan:
         self.history.append(new_info)
         # Optionally mutate `self.properties` or add constraints
         return self
+
+    def is_fullfilled(self) -> bool:
+        return False
     
     def does(self, property_name: str) -> bool:
         """Check if the plan includes actions for the given plugin."""
         # Handle module names
-        if "." in property_name:
-            property_name = property_name.split(".")[-1]
-        return property_name in self.properties
+        property_name = utils.plugin_basename(property_name)
+        return property_name in self.properties.keys()
 
     def __repr__(self):
-        return f"Plan(properties={self.properties})"
+        return f"Plan(to_extract={self.properties})"
 
 def plan(kb: KnowledgeBase, query: Query, program: Program):
-    # Run the logic program given the query and program to produce a plan
+    """ 
+    Run the logic program given the query and program to produce a plan
+    """
     
-    to_extract = run_engine(kb, query, program) 
-    logger.info(f"List of properties in the plan: {to_extract}")
+    properties = run_engine(kb, query, program) 
+    logger.info(f"List of properties in the plan: {properties}")
 
-    return Plan(properties=to_extract)
+    if 'language' in properties:    # TODO: Make sure this is correct
+        del properties['language']  # Remove language property, handled by the program
+
+    return Plan(properties=properties)

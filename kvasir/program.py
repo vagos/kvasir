@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Any, Type
+import inspect
 
 from .utils import logger
 
@@ -33,23 +34,29 @@ def detect_language(entry):
     else:
         raise ValueError(f"Unsupported file type: {entry}")
 
+class Action(Enum):
+    PRESERVE = "preserve"
+    ELIMINATE = "eliminate"
+    MAXIMIZE = "maximize"
+    MINIMIZE = "minimize"
+
 class Property():
     """Base class for properties that can be attached to programs."""
-    def __init__(self, name: str, value: Any):
+    def __init__(self, name: str, value: Any, action: Action = Action.PRESERVE):
         self.name = name
         self.value = value
-        self.tobe_preserved = True # Whether this property should be preserved during regeneration
+        self.action = action
 
     def to_lm(self) -> str:
         """Convert the property to a string representation for a language model. This should include domain-specific information."""
         return f"""The program has the property '{self.name}'.
 It is {self.value}.
-It should {'not' if not self.tobe_preserved else ''} be preserved during regeneration.
+It should be {self.action.value}d during regeneration.\n
 """
 
-    def set_preserve(self, preserve: bool):
-        """Set whether this property should be preserved during regeneration."""
-        self.tobe_preserved = preserve
+    def set_action(self, action: Action):
+        """Set the action to be taken on this property. This is done by the planner."""
+        self.action = action
 
     def __repr__(self):
         return f"{self.name}: {self.value}"

@@ -1,4 +1,5 @@
 import logging
+import copy
 
 import dotenv
 import dspy
@@ -6,9 +7,10 @@ import tempfile
 
 import kvasir.logic as logic
 from kvasir.logic import Query
-from kvasir.program import Program
+from kvasir.program import Program, Action
 
 from .utils import logger, clean_llm_output
+from kvasir import utils
 
 dotenv.load_dotenv()
 
@@ -37,10 +39,13 @@ class SynthesizeProgram(dspy.Module):
             file.write(regenerated_program_src)
             file_path = file.name
         regenerated_program = Program(entry=file_path)
-        regenerated_program.annotations = program.annotations.copy() # TODO: Do this better
         return regenerated_program
 
 def regenerate(program, kb, query, plugins) -> Program:
+    logger.debug(f"Plugins loaded: {[plugin.__name__ for plugin in plugins]}")
+
+    program = copy.deepcopy(program)
+
     kb.add_logic(program.to_logic())
     for plugin in plugins:
         if hasattr(plugin, "knowledge"):
@@ -50,20 +55,56 @@ def regenerate(program, kb, query, plugins) -> Program:
     plan = logic.plan(kb, query, program)
     logger.info(f"Generated plan: {plan}")
 
-    for plugin in plugins:
-        logger.debug(f"Trying to apply {plugin.__name__} to the program {program}")
-        if hasattr(plugin, "apply") and plan.does(plugin.__name__):
-            logger.debug(f"Applying {plugin.__name__}")
-            plugin.apply(program)
+    used_plugins = { utils.plugin_basename(plugin.__name__): plugin for plugin in plugins if plan.does(plugin.__name__) }
 
-    program_ = synthesize(program, plan)
+    program_ = program
 
-    for plugin in plugins:
-        if hasattr(plugin, "verify") and plan.does(plugin.__name__):
-            logger.debug(f"Verifying {program_} against {program} with {plugin.__name__}")
-            plugin.verify(program, program_)
+    while not plan.is_fullfilled():
+        for plugin in used_plugins.values():
+            if hasattr(plugin, "apply"):
+                logger.debug(f"Applying {plugin.__name__}")
+                plugin.apply(program)
 
-    return program_
+        for plugin in used_plugins.values():
+            if hasattr(plugin, "transform"):
+                logger.debug(f"Transforming program with {plugin.__name__}")
+                plugin.transform(program)
+
+        program_ = synthesize(program, plan)
+
+        for plugin in used_plugins.values():
+            if hasattr(plugin, "apply"):
+                logger.debug(f"Applying {plugin.__name__}")
+                plugin.apply(program_)
+
+        for property, action in plan.properties.items():
+            plugin = used_plugins[property]
+            match action:
+                case Action.PRESERVE:
+                    if hasattr(plugin, "verify"):
+                        logger.debug(f"Preserving property {property} with {plugin.__name__}")
+                        ok = plugin.verify(program, program_)
+                        logger.debug(f"Property {property} preserved: {ok}")
+                case Action.ELIMINATE:
+                    if hasattr(plugin, "verify"):
+                        logger.debug(f"Eliminating property {property} with {plugin.__name__}")
+                        ok = not plugin.verify(program, program_)
+                        logger.debug(f"Property {property} eliminated: {ok}")
+                case Action.MAXIMIZE:
+                    ok = program_[property] > program[property]
+                    logger.debug(f"Maximizing property {property}: {ok}")
+                    # check if program_[property.name] > program[property.name]
+                case Action.MINIMIZE:
+                    ok = program_[property] < program[property]
+                    logger.debug(f"Minimizing property {property}: {ok}")
+                    # check if program_[property.name] < program[property.name]
+                case _:
+                    logger.warning(f"Unknown action {property.action} for property {property.name}")
+
+        program, program_ = program_, program
+        break
+
+    return program
 
 
 def synthesize(program, plan) -> Program:
