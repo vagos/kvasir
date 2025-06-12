@@ -4,6 +4,10 @@ from kvasir.program import Program, Language
 
 @hookimpl
 def apply(program):
+    pass
+
+@hookimpl
+def transform(program):
     program.language = Language.HS
 
 @hookimpl

@@ -10,10 +10,16 @@ def apply(program):
     Apply the plugin to the program.
     This can either extract a property from the program or modify it in some way.
 
-    This should mutate or annotate the program object (e.g., program.signatures = ...).
-    Returns set of extracted/modified properties.
+    This should annotate the program object (e.g., program.signatures = ...).
     """
 
+@hookspec
+def transform(program):
+    """
+    Transform the program to a different language or representation.
+
+    This should mutate the program object (e.g., program.language = Language.HS).
+    """
 
 @hookspec
 def verify(original_program, regenerated_program):
