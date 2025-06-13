@@ -27,7 +27,7 @@ square root of a number and then divides it by 1.0f to get the reciprocal.
 ... return y;
 ... }
 ...
-... give me an equivalent function but it as short as possible
+... give me an equivalent function but make it as short as possible
 
 Here is a shorter version of the `Q_rsqrt` function using bitwise operations:
 ```
@@ -37,3 +37,28 @@ float Q_rsqrt(float number) {
   return * (float *) &i;
 }
 ```
+
+>>> float Q_rsqrt( float number )
+... {
+...         long i;
+...         float x2, y;
+...         const float threehalfs = 1.5F;
+...
+...         x2 = number * 0.5F;
+...         y  = number;
+...         i  = * ( long * ) &y;                       // evil floating point bit level hacking
+...         i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+...         y  = * ( float * ) &i;
+...         y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+... //        y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+...
+...         return y;
+... }
+... Rewrite this function to be idiomatic
+```
+float Q_rsqrt( float number ) {
+    constexpr long i = 0x5f3759df - ( static_cast<long>(number) >> 1 );
+    return static_cast<float>(i) * ( 3.0F - number * static_cast<float>(i) * static_cast<float>(i) );
+}
+```
+
