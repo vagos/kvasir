@@ -84,24 +84,6 @@
 
 \begin{abstract}
 \end{abstract}
-
-% Given a source program and a declarative user query $f(P, P')$,
-% \sys orchestrates a property-guided regeneration process.
-% Adapters extract relevant properties from the original program
-% using pluggable analyzers,
-% which may be language-agnostic (\eg I/O tracing)
-% or language-specific (\eg AST parsing),
-% and may require execution environments (\eg sandboxing).
-% The logic engine formulates a minimum-satisfiability (MinSAT) problem
-% over the property space using a plugin-extensible knowledge base that encodes
-% compatibility constraints (\eg which transformations preserve purity, which
-% properties can be reused across languages).
-% The synthesis engine uses these extracted properties to generate candidate
-% programs, which are verified by verifier plugins.
-% The result is a program $P'$ that satisfies the user's transformation goal
-% while preserving required behaviors of the original program.
-
-
 \maketitle
 
 \section{Introduction}
@@ -126,15 +108,17 @@ translate components across languages~\cite{manzoor_cli_python,gaultier_rewrite_
 and patch security vulnerabilities~\cite{ikegami2022userefactoringsecurityvulnerability,schneier2013security_vulnerabilities}.
 These transformations, are often brittle, time-consuming, and require significant expertise.
 
-% TODO: Introduce LLMs around here
-Recent advances in large language models (LLMs) have opened new possibilities for automating code transformation tasks.
+Recent advances in large language models (LLMs) have opened new possibilities for automating program transformation and synthesis tasks, making them attractive tools for software evolution, albeit with caveats.
+This flexibility has positioned them as attractive tools for software evolution.
 LLMs can translate code across languages~\cite{ou2025enhancingllmbasedcodetranslation},
 refactor complex modules~\cite{ziftci2025migrating},
 and even generate entire components from scratch~\cite{huynh2025largelanguagemodelscode}.
-This flexibility has positioned them as attractive tools for software evolution.
-However, their outputs are shaped by surface-level patterns in the input~\cite{yang2025evaluatinggeneralizationcapabilitieslarge}.
-They struggle with negative constraints (\eg \say{do not use this interface}), often overfit to spurious input cues, and lack mechanisms for enforcing precise behavioral properties on the generated code~\cite{xu2023llmfoolitselfpromptbased, wu2023deceptpromptexploitingllmdrivencode,jiang2024llmsdreamelephantswhen,hwang2024thinkpinkelephant,roh2025breakthechainreasoningfailuresllms}.
-As a result, while LLMs can accelerate prototyping, developers remain unable to reliably steer or verify their correctness.
+However, their outputs are shaped by surface-level patterns in the input~\cite{yang2025evaluatinggeneralizationcapabilitieslarge},
+they struggle with negative constraints~\cite{hwang2024thinkpinkelephant,jiang2024llmsdreamelephantswhen},
+often overfit to spurious input cues~\cite{xu2023llmfoolitselfpromptbased, wu2023deceptpromptexploitingllmdrivencode},
+and lack mechanisms for enforcing precise behavioral properties on the generated code~\cite{roh2025breakthechainreasoningfailuresllms}.
+As a result, developers must prompt and steer them through brittle heuristics or manual trial-and-error, leading to workflows that are difficult to audit, integrate, or systematically reason about.
+Bridging this gap calls for a declarative interface---one that allows developers to specify explicit semantic constraints and transformation goals, and to reason about their satisfaction in a principled way.
 
 % Mention that:
 % 1. They have shown great promise in program synthesis + 
@@ -143,13 +127,6 @@ As a result, while LLMs can accelerate prototyping, developers remain unable to 
 % 4. Difficult to verify correctness of outputs against certain properties. The
 %    user cannot easily set requirements or say output should be within a range of
 %    acceptance
-
-Despite their power, LLMs and associated tooling remain fundamentally
-procedural and ad hoc: developers must prompt and steer them indirectly, often
-relying on brittle heuristics or manual trial-and-error to align outputs with
-intent.
-This process is brittle, hard to audit, and difficult to integrate into systematic workflows.
-Bridging this gap calls for a declarative interface for transformation, one that allows explicit semantic constraints and transformation goals, and supports reasoning about their satisfaction.
 
 This paper present \sys, a system for \emph{scalable program regeneration}.
 \sys allows users
@@ -175,9 +152,9 @@ If no such program exists, \sys returns failure explanations derived from the un
 \sys can be deployed at various points in the software lifecycle.
 It is particularly well-suited for use during maintenance and auditing phases, where developers seek to refactor or replace components, especially when the original code is difficult to understand, modify, or is unavailable and the component exists only as a binary.
 It can also assist during development, for instance when integrating third-party modules that must be adapted to local conventions or hardened against security vulnerabilities.
-In each case, \sys serves as a tool for localized, correctness-sensitive transformations with minimal disruption to surrounding logic.
 However, \sys is not designed for whole-program synthesis or large-scale migrations.
-Its strength lies in scoped regeneration tasks, typically at the granularity of a function, method, or small module—where transformation goals can be explicitly stated and verified in isolation.
+Its strength lies in scoped regeneration tasks, typically at the granularity of a function, method, or small module---where transformation goals can be explicitly stated and verified in isolation.
+To this end, \sys is designed not only as a standalone tool but also as a library component within larger, compound AI systems~\cite{compound-ai-blog}, where it can be invoked as a programmable, constraint-guided regeneration module.
 
 % Leverages insights: (1) modern applications highly modular (2) the problem of LLM-assisted program transformations needs to be transformed in a way that a ground truth is readily available: the original program
 % (3) towards the generality and longevity of this solution the interface needs to be purely declarative, to allow independent progress of the underlying comopnents to give automatic benefits
@@ -556,20 +533,18 @@ This modularity allows language-specific analyses to coexist with general-purpos
 
 The synthesis process begins with a set of enforced properties $\{ X \mid \mathsf{do}(X) \}$ selected by the planner (\cref{sec:dsl}). These properties reflect both user goals (e.g., removing side effects, translating to a different language) and structural characteristics of the input program that should be preserved. The planner constructs a transformation plan that specifies, for each relevant unit of code (typically a function), what constraints must hold in the regenerated version.
 
-For instance, a plan for regenerating a specific function might include:
-\begin{itemize}
-  \item $\mathsf{do}(\texttt{language}(f, \texttt{haskell}))$ — the function must be rewritten in Haskell,
-  \item $\mathsf{do}(\texttt{pure}(f))$ — the function must be side-effect-free,
-  \item $\mathsf{do}(\texttt{signature}(f))$ — the original function signature must be preserved.
-\end{itemize}
+For instance, a plan for regenerating a specific function $f$ might include:
+\(\mathsf{do}(\texttt{language}(f, \texttt{haskell}))\) the function must be written in Haskell, 
+\(\mathsf{do}(\texttt{pure}(f))\) the function must be side-effect-free, and 
+\(\mathsf{do}(\texttt{signature}(f))\) the function signature must be preserved.
 % These constraints are scoped to the transformation unit and inform the synthesis phase directly.
 
 \heading{LLM-guided regeneration}
 The synthesis task is delegated to a language model guided by a structured prompt. The prompt is constructed by composing fragments contributed by plugins that are part of the regeneration plan, each of which can contribute natural language instructions relevant to its domain. For example:
 \begin{itemize}
-  \item A signature plugin may contribute: \emph{\say{The output should implement a function \texttt{sqrt(n: float): float}.}}
-  \item A length plugin combined with a minimization goal may prepend: \emph{\say{The output should be as short as possible while preserving the original functionality.}}
-  \item A language plugin may prepend: \emph{\say{The output function should be written in Haskell.}}
+  \item A \ttt{signature} plugin may contribute: \emph{\say{The output should implement a function \texttt{sqrt(n: float): float}.}}
+  \item A \ttt{length} plugin combined with a minimization goal may prepend: \emph{\say{The output should be as short as possible while preserving the original functionality.}}
+  \item A \ttt{javascript2haskell} plugin may prepend: \emph{\say{The output function should be written in Haskell.}}
 \end{itemize}
 
 These fragments are combined with a normalized text representations of each of 
@@ -582,7 +557,7 @@ For instance, if the target function must be pure, the prompt will exclude infor
 Second, candidate outputs are verified post hoc against the enforced properties~(\cref{sec:verification}); if verification fails, the result is either rejected or used to revise the current plan.
 % This hybrid model balances flexibility with rigor: the LLM provides diversity and fluency, while the planner ensures adherence to property-based constraints.
 
-% In sum, the synthesis plan acts as a structured contract between logical property reasoning and generative synthesis. By operating at a localized level and under clearly scoped constraints, \sys delivers regenerations that are both controlled and scalable—when applied thoughtfully and systematically.
+% In sum, the synthesis plan acts as a structured contract between logical property reasoning and generative synthesis. By operating at a localized level and under clearly scoped constraints, \sys delivers regenerations that are both controlled and scalable---when applied thoughtfully and systematically.
 
 \section{Property Verification and Feedback Loop}
 \label{sec:verification}
@@ -591,7 +566,7 @@ To validate that a regenerated program satisfies the intended goals, \sys includ
 Verification accepts only programs that meet the plan's constraints and provides feedback for refining or retrying those that do not.
 
 \heading{Verification as property checking}
-After synthesis, \sys invokes a set of property-specific checkers. Each checker is responsible for evaluating whether a property $X$ in $\mathsf{do}(X)$ holds for the regenerated program fragment. These checkers operate at varying levels of precision—ranging from structural pattern checks to light static or symbolic analysis—and are tailored to the property type.
+After synthesis, \sys invokes a set of property-specific checkers. Each checker is responsible for evaluating whether a property $X$ in $\mathsf{do}(X)$ holds for the regenerated program fragment. These checkers operate at varying levels of precision---ranging from structural pattern checks to light static or symbolic analysis---and are tailored to the property type.
 
 Examples include:
 \begin{itemize}
@@ -823,7 +798,7 @@ In addition, it offers a level of explainability that is useful in case transfor
 
 \heading{Targeted regeneration}
 \sys is designed as a surgical tool for targeted regeneration tasks, not for whole-program synthesis or full language migration.
-It operates most effectively on localized units of code—such as individual functions, methods, or small modules, where behavior is self-contained and transformation goals can be expressed through explicit constraints.
+It operates most effectively on localized units of code---such as individual functions, methods, or small modules, where behavior is self-contained and transformation goals can be expressed through explicit constraints.
 % Typical applications include rewriting high-risk, deprecated, or poorly understood code segments where correctness is critical and semantic preservation is essential.
 Broad, untargeted use may yield incomplete results and can be bottlenecked by the limited context of the back-end model \sys uses.
 
@@ -840,7 +815,7 @@ The generative synthesis phase is subject to the inherent variability and failur
 In cases where no satisfactory candidate is found, regeneration may fail and require manual intervention.
 
 \heading{Language-specific support}
-Although some components of \sys are language-agnostic (\eg logic-based planning), others—particularly extraction and verification plugins are not.
+Although some components of \sys are language-agnostic (\eg logic-based planning), others---particularly extraction and verification plugins are not.
 Supporting a new language requires implementing language-specific analyzers and constraints. This modularity is deliberate, but it does limit out-of-the-box generality.
 Work on a unified language representation~\cite{koppel2018onetool,bap2011,dillig2009sail}, is relevant to overcomming this limitation.
 The current \sys prototype supports Python, JavaScript, Haskell, and C.
