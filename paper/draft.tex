@@ -841,7 +841,9 @@ In cases where no satisfactory candidate is found, regeneration may fail and req
 
 \heading{Language-specific support}
 Although some components of \sys are language-agnostic (\eg logic-based planning), others—particularly extraction and verification plugins are not.
-Supporting a new language requires implementing language-specific analyzers and constraints. This modularity is deliberate, but it does limit out-of-the-box generality. The current \sys prototype supports Python, JavaScript, Haskell, and C.
+Supporting a new language requires implementing language-specific analyzers and constraints. This modularity is deliberate, but it does limit out-of-the-box generality.
+Work on a unified language representation~\cite{koppel2018onetool,bap2011,dillig2009sail}, is relevant to overcomming this limitation.
+The current \sys prototype supports Python, JavaScript, Haskell, and C.
 
 \heading{Future directions}
 Several extensions could improve \sys's capabilities. These include richer property languages (\eg temporal or dataflow properties), tighter integration with formal verification tools, and cross-component reasoning for coordinated rewrites.
