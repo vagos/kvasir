@@ -1,0 +1,2 @@
+https://pypi.org/project/left-pad/
+https://github.com/caltechlibrary/commonpy/blob/main/commonpy/data_utils.py
