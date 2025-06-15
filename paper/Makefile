@@ -43,4 +43,16 @@ once:
 clean:
 	/bin/rm -rf $(PDFS) *.out *.fdb_latexmk *.synctex.gz *.dvi *.aux *.ps *~ *.log *.lot *.lof *.toc *.blg *.bbl -r _minted* $(GENPDFS)
 
+# Check style:
+proof:
+	echo "weasel words: "
+	sh bin/noweasel *.tex
+	echo
+	echo "passive voice: "
+	sh bin/nopassive *.tex
+	echo
+	echo "duplicates: "
+	perl bin/nodups *.tex
+
+
 FORCE:
