@@ -585,7 +585,7 @@ When a candidate fails verification, \sys treats this as a feedback signal. Inst
 \begin{itemize}
   \item \emph{Retrying synthesis}: A fresh LLM call with the same plan but a different generation path.
   \item \emph{Feedback loop}: \sys will provide the previous regeneration attempt 
-    as an additional context to the LLM, together with with an explanation of the properties that were violated, prompting it to adapt its output based on prior failures.
+    as an additional context to the LLM, together with an explanation of the properties that were violated, prompting it to adapt its output based on prior failures.
     This mode is only activated if the verifier knows that the output will not to taint
     followupp regeneration attempts.
   \item \emph{Fallback handling}: If a function repeatedly fails validation, \sys may leave the original version intact or mark it for manual inspection.
