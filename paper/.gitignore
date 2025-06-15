@@ -3,5 +3,5 @@
 *.blg
 *.log
 *.out
-*.pdf
+draft.pdf
 _minted-draft
