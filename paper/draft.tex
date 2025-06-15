@@ -369,8 +369,7 @@ The resulting program is:
 \begin{minted}[frame=lines]{js}
 function connectDB() {
  const sqlite = require('sqlite');
- return sqlite.open({filename: 'music.db'}); 
-}
+ return sqlite.open({filename: 'music.db'}); }
 function getAlbumsByArtist(db, artist) {
  const rows = await db.all("SELECT album
  FROM songs WHERE artist = ?", artist);
