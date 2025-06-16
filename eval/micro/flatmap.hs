@@ -1,13 +1,10 @@
--- Main.hs
 module Main where
 
--- Define nested list
 data NestedList a
   = Elem a
   | List [NestedList a]
   deriving (Show, Eq)
 
--- | flatmap: flatten any depth of nesting and apply f to every element
 flatmap :: (a -> b) -> NestedList a -> [b]
 flatmap f (Elem x) = [f x]
 flatmap f (List x) = concatMap (flatmap f) x
