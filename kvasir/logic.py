@@ -109,6 +109,11 @@ class Plan:
             case Action.MINIMIZE:
                 self.fullfilment[property] = ok
 
+    def is_impossible(self) -> bool:
+        if len(self.history) > 10:
+            return True
+
+        return False
     def is_fullfilled(self) -> bool:
         """Check if the plan is fully satisfied."""
         return all(self.fullfilment.get(prop, False) for prop in self.properties)

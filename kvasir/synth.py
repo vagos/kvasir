@@ -60,7 +60,7 @@ def regenerate(program: Program, kb: logic.KnowledgeBase, query: Query, plugins)
 
     program_ = program
 
-    while not plan.is_fullfilled():
+    while not plan.is_fullfilled() and not plan.is_impossible():
         for plugin in used_plugins.values():
             if hasattr(plugin, "apply"):
                 logger.debug(f"Applying {plugin.__name__}")
@@ -108,6 +108,8 @@ def regenerate(program: Program, kb: logic.KnowledgeBase, query: Query, plugins)
         plan.reconfigure(new_info=program_)
         program, program_ = program_, program
 
+    logger.info(f"Produced program after {len(plan.history)} iterations. Impossible: {plan.is_impossible()}. Fullfilled: {plan.is_fullfilled()}")
+
     return program
 
 
@@ -115,6 +117,7 @@ def synthesize(program, plan) -> Program:
     """Synthesize a new program based on the plan."""
     synthesize = SynthesizeProgram()
     regenerated_program = synthesize(program)
+    regenerated_program.annotations = program.annotations.copy()
     if logger.level == logging.DEBUG:
         dspy.inspect_history()
     
