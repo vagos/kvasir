@@ -4,7 +4,7 @@ from clingo import Control
 
 from kvasir import utils
 
-from .program import Action, Program
+from .program import Action, Program, Property
 from .utils import logger
 
 
@@ -90,16 +90,28 @@ ndo(N) :- N = #count { X : do(X) }.
 class Plan:
     def __init__(self, properties: Dict[str, Action]):
         self.properties: Dict[str, Action] = properties
-        self.history = []  # e.g., list of prior generations / decisions
+        self.history: list[Program] = []
+        self.fullfilment = {}
 
-    def reconfigure(self, new_info) -> "Plan":
+    def reconfigure(self, new_info):
         """Update plan based on new synthesis results (e.g., failed verification)."""
         self.history.append(new_info)
-        # Optionally mutate `self.properties` or add constraints
-        return self
+
+    def update(self, property: str, ok: bool):
+        action = self.properties[property]
+        match action:
+            case Action.PRESERVE:
+                self.fullfilment[property] = ok
+            case Action.ELIMINATE:
+                self.fullfilment[property] = ok
+            case Action.MAXIMIZE:
+                self.fullfilment[property] = ok
+            case Action.MINIMIZE:
+                self.fullfilment[property] = ok
 
     def is_fullfilled(self) -> bool:
-        return False
+        """Check if the plan is fully satisfied."""
+        return all(self.fullfilment.get(prop, False) for prop in self.properties)
     
     def does(self, property_name: str) -> bool:
         """Check if the plan includes actions for the given plugin."""
