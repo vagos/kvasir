@@ -81,13 +81,12 @@ def run_nodejs(js_src, inputs):
                 stderr=subprocess.DEVNULL,
                 timeout=2
             )
-
-            logger.debug(f"Node.js output for input {i}: '{result.decode()}'")
-            parsed = result.decode()
+            result = result.decode()[:-1]  # Remove trailing newline
+            logger.debug(f"Node.js output for input {i}: '{result}'")
         except Exception as e:
             logger.error(f"Error running Node.js for input {i}: {e}")
-            parsed = None
-        results.append((i, parsed))
+            result = None
+        results.append((i, result))
     return results
 
 def run_haskell(src, inputs):
