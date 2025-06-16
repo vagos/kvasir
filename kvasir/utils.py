@@ -1,5 +1,7 @@
 import logging
 import sys
+import re
+
 
 logger = logging.getLogger("kvasir")
 
@@ -23,27 +25,10 @@ def clean_llm_output(text: str) -> str:
         lines = lines[:-1]
     return "\n".join(lines)
 
-def get_code_block(text: str) -> str:
-    """
-    Extract the first code block from a text string.
-    A code block is defined as text between triple backticks (```).
-    """
-    lines = text.splitlines()
-    in_code_block = False
-    code_lines = []
 
-    for line in lines:
-        if line.strip() == "```":
-            if in_code_block:
-                break  # End of code block
-            else:
-                in_code_block = True  # Start of code block
-                continue
-
-        if in_code_block:
-            code_lines.append(line)
-
-    return "\n".join(code_lines).strip()
+def get_code_block(text):
+    match = re.search(r"```(?:\w*\n)?(.*?)```", text, re.DOTALL)
+    return match.group(1).strip() if match else ""
 
 def plugin_basename(name: str) -> str:
     """
