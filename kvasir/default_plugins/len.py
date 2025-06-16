@@ -8,9 +8,6 @@ class ProgramLength(Property):
     This property can be used to analyze or manipulate the program based on its length.
     """
 
-    def __lt__(self, other):
-        return self.value < other.value
-
 @hookimpl
 def apply(program):
     program["len"] = ProgramLength("len", program.src.count("\n") + 1)
