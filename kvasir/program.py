@@ -62,6 +62,14 @@ It should be {self.action.value}d during regeneration.\n
         """Set the action to be taken on this property. This is done by the planner."""
         self.action = action
 
+    def __lt__(self, other: "Property") -> bool:
+        """Compare properties based on their value."""
+        return self.value < other.value
+
+    def __gt__(self, other: "Property") -> bool:
+        """Compare properties based on their value."""
+        return self.value > other.value
+
     def __repr__(self):
         return f"{self.name}: {self.value}"
 
@@ -117,8 +125,8 @@ class Program(metaclass=ProgramMeta):
     def __setitem__(self, key, value):
         self.annotations[key] = value
 
-    def __getitem__(self, key):
-        return self.annotations.get(key, None)
+    def __getitem__(self, key) -> Property:
+        return self.annotations[key]
 
 
 # Language-specific programs
