@@ -9,22 +9,23 @@ GENPDFS = $(patsubst %.svg,%.pdf,$(wildcard figures/*.svg))
 PDFS = $(addsuffix .pdf,$(TARGETS))
 BIBFILES=bib.bib
 
+LATEXMK      = latexmk
+LATEXMKFLAGS = -pdf \
+               -pdflatex="xelatex --shell-escape -interaction=nonstopmode" \
+               -use-make
 
-all: once
+all: $(PDFS)
 
-%.pdf: %.tex %.blg %.toc $(TEXFILES) $(FIGURES) $(BIBFILES)
-	pdflatex --shell-escape $*.tex
-	bibtex $*
-	pdflatex  --shell-escape $*.tex
-	pdflatex  --shell-escape $*.tex
+%.pdf: $(TEXFILES) $(FIGURES) $(BIBFILES)
+	$(LATEXMK) $(LATEXMKFLAGS) $<
 
 %.pdf: %.svg
 	inkscape --export-pdf=$@ $<
 
 continuous: draft.tex
-	latexmk -bibtex -pdf -pvc \
-		-pdflatex="pdflatex --shell-escape -interaction=nonstopmode -halt-on-error" \
-		draft.tex
+	$(LATEXMK) -pdf \
+	-pdflatex="xelatex --shell-escape -interaction=nonstopmode" \
+	-pvc $<
 
 once:
 	pdflatex --shell-escape draft.tex
