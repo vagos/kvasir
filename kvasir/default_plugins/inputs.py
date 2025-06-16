@@ -15,7 +15,6 @@ lm = dspy.LM('openai/gpt-4o-mini')
 @hookimpl
 def apply(program):
     if "inputs" in program.annotations:
-        logger.debug(f"Program already has inputs.")
         return
     prompt = f"""You are analyzing a program.
     Your task is to generate a list of concrete inputs that would meaningfully exercise the behavior of the program.
@@ -33,11 +32,9 @@ val1, val2, val3
 ```
 """
     output = "\n".join(lm(prompt))
-    logger.debug(f"Raw LLM output: {output}")
-    cleaned = clean_llm_output(output)
-    cleaned = get_code_block(cleaned)
+    output = get_code_block(output)
     
-    inputs = [line.strip() for line in cleaned.splitlines() if line.strip()]
+    inputs = [line.strip() for line in output.splitlines() if line.strip()]
 
     program["inputs"] = Inputs("inputs", inputs)
     logger.debug(f"LLM-generated inputs: {inputs}")
