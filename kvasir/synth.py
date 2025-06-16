@@ -85,6 +85,7 @@ def regenerate(program: Program, kb: logic.KnowledgeBase, query: Query, plugins)
 
         for property, action in plan.properties.items():
             plugin = used_plugins[property]
+            ok = True
             match action:
                 case Action.PRESERVE:
                     if hasattr(plugin, "verify"):
@@ -102,9 +103,10 @@ def regenerate(program: Program, kb: logic.KnowledgeBase, query: Query, plugins)
                 case Action.MINIMIZE:
                     ok = program_[property] < program[property]
                     logger.debug(f"Minimizing property {property}: {ok}")
+            plan.update(property, ok)
 
+        plan.reconfigure(new_info=program_)
         program, program_ = program_, program
-        break
 
     return program
 
