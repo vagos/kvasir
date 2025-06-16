@@ -4,7 +4,7 @@ from clingo import Control
 
 from kvasir import utils
 
-from .program import Action, Program, Property
+from .program import Action, Program
 from .utils import logger
 
 
