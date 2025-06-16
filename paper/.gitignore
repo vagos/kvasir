@@ -3,5 +3,7 @@
 *.blg
 *.log
 *.out
+*.fls
+*.fdb_latexmk
 draft.pdf
 _minted-draft
