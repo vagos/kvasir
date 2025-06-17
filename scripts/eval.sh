@@ -19,6 +19,7 @@ kvasir -vvv -i "$input"/npm/left-pad/index.js -q "$input"/query/io_same.pl -o "$
 "$scripts"/naivellm.py "$input"/rosetta/helloworld.js 'Turn this program into Haskell code' > "$output"/naivellm/rosetta-helloworld.hs
 "$scripts"/naivellm.py "$input"/rosetta/helloworld.js 'Turn this program into Python code' > "$output"/naivellm/rosetta-helloworld.py
 "$scripts"/naivellm.py "$input"/rosetta/median.js 'Turn this program into Python code' > "$output"/naivellm/rosetta-median.py
+"$scripts"/naivellm.py "$input"/rosetta/median.js 'Turn this program into Haskell code' > "$output"/naivellm/rosetta-median.hs
 "$scripts"/naivellm.py "$input"/rosetta/rot13.js 'Turn this program into Python code' > "$output"/naivellm/rosetta-rot13.py
 "$scripts"/naivellm.py "$input"/rosetta/readfile.js 'Turn this program into Python code' > "$output"/naivellm/rosetta-readfile.py
 
