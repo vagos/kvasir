@@ -392,8 +392,13 @@ function getAlbumsByArtist(db, artist) {
  return rows.map(row => row.album); }
 \end{minted}
 
-% \heading{Key results}
-% \sys is able to effectively transform programs across a variety goals.
+\heading{Key results}
+\sys is able to effectively transform all programs across the above tasks,
+producing high-quality outputs that satisfy user-specified constraints. A total
+of six plugins were required to perform the above transformations, each
+contributing either a set of extracted and verified properties, or a
+transformation, and a set of pre- and post-conditions that the logic engine
+uses to construct the regeneration plan.
 
 \section{\sys Design}
 \label{sec:design}
