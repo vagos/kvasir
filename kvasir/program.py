@@ -10,6 +10,7 @@ class Language(Enum):
     JS = "javascript"
     HS = "haskell"
     C = "c"
+    PY = "python"
 
     def __str__(self):
         return self.value.capitalize()
@@ -23,6 +24,8 @@ class Language(Enum):
                 return ".hs"
             case Language.C:
                 return ".c"
+            case Language.PY:
+                return ".py"
             case _:
                 raise ValueError(f"Unsupported language: {self.value}")
 
@@ -35,6 +38,8 @@ def detect_language(entry) -> Language:
         return Language.HS
     elif entry.endswith(".c"):
         return Language.C
+    elif entry.endswith(".py"):
+        return Language.PY
     else:
         raise ValueError(f"Unsupported file type: {entry}")
 
@@ -138,6 +143,9 @@ class HaskellProgram(Program):
 
 class CProgram(Program):
     language = Language.C
+
+class PythonProgram(Program):
+    language = Language.PY
 
 # Register the language-specific programs
 ProgramMeta.registry[Language.JS] = JavaScriptProgram
