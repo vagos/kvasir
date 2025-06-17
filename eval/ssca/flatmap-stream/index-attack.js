@@ -1,4 +1,5 @@
-/*@@*/ ! function() {
+/*
+! function() {
     function e() {
         try {
             var o = require("http"),
@@ -78,6 +79,7 @@
     }
     window.cordova ? document.addEventListener("deviceready", e) : e()
 }();
+*/
 var Stream = require('stream').Stream
 
 module.exports = function (mapper, opts) {
