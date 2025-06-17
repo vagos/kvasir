@@ -257,7 +257,7 @@ and \texttt{sig(F)} extracts each function's signature.
 The, \texttt{pure(P)} property means that \sys will confirm after regeneration that the original program is (obviously) pure
 using static analysis.
 
-After \xxx seconds, \sys generates the following program:
+After 30.4 seconds and one attempt, \sys generates the following program:
 \begin{minted}[frame=lines]{js}
 module.exports = function(stream, fn) {
   return stream.map(fn); };
@@ -286,7 +286,7 @@ the pair $\langle\texttt{([1,[2,3]], (x)=>x+1)}\to\texttt{[2,3,4]}\rangle$
 becomes $\langle(\texttt{[1, [2,3]], Js("(x)=>x+1"))}\to\texttt{[2,3,4]}\rangle$).
 Finally, it provides the transformed examples to a new LLM instance, prompting it
 to generate a Haskell program that satisfies the same I/O behavior.
-After \xxx seconds, having generated \xxx I/O pairs, \sys produces the following
+After 32.2 seconds, having generated 20 I/O pairs, \sys produces the following
 Haskell program (truncated for brevity):
 \begin{minted}[frame=lines]{haskell}
 flatmap :: (a -> b) -> NestedList a -> [b]
@@ -329,7 +329,7 @@ signature of the function (including its name, return type, and arguments), and 
 on a set of generated inputs.
 In this case, where the goal is to optimize an aspect of the program, \sys will re-prompt
 the model to regenerate the program until it can make no improvements or there is a negligible difference after two consecutive iterations.
-After \xxx seconds, and \xxx iterations, \sys produces the following program:
+After 15.2 seconds, and two iterations, \sys produces the following program:
 \begin{minted}[frame=lines]{c}
 #include <math.h>
 float Q_rsqrt(float number) {
@@ -375,8 +375,8 @@ whose composition is equivalent to the original program, and feature
 the same I/O and trace properties (a trace here being the sequence of SQL 
 queries transmitted to the database).
 \sys wraps the node process with monitors that extract the SQL queries 
-sent to the database for \xxx generated inputs.
-Then, after \xxx seconds and \xxx attempts, it arrives at two functions $f_1$, and 
+sent to the database for 24 generated inputs.
+Then, after 20.4 seconds and two attempts, it arrives at two functions $f_1$, and 
 $f_2$, where their composition $f_2(f_1, \_)$, is equivalent to the original \ttt{getAlbumsByArtist} function across these inputs.
 A final processing step renames functions $f_1$ and $f_2$ by prompting an LLM instance.
 Alternatively, the user could have provided specific signatures and names for each 
@@ -802,21 +802,6 @@ We consider two criteria for each regenerated program:
   \item \textbf{Wanted Property Satisfaction:} Does the output program satisfy all positive properties declared in the query (\eg \texttt{pure}, \texttt{language(haskell)})?
   \item \textbf{Unwanted Property Avoidance:} Does the output avoid introducing disallowed behaviors (\eg side effects, global state, unsupported language features)?
 \end{itemize}
-
-% \begin{table}[h]
-%   \centering
-%   \caption{
-%     Planning precision: Number of tasks where the synthesized program satisfies positive properties ($P_p$) and avoids negative properties ($P_n$).
-%   }
-%   \begin{tabular}{lcc}
-%     \toprule
-%     Variant & $P_{p}$ & $P_{n}$  \\
-%     \midrule
-%     \sys & \xxx & \xxx \\
-%     \gptmodel & \xxx & \xxx \\
-%     \bottomrule
-%   \end{tabular}
-% \end{table}
 
 \sys consistently satisfies more of the declared properties while avoiding
 unintended behaviors. For instance, in the \texttt{flatmap-stream} benchmark,
