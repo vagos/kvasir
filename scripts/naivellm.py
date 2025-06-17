@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import dspy
+import sys
 import argparse
 from kvasir.utils import get_code_block
 from kvasir.program import Program
@@ -14,6 +15,7 @@ def main():
     parser.add_argument('task', type=str, help='The task to perform on the program.')
     args = parser.parse_args()
 
+    print(f"Performing task: {args.task} on program: {args.program}", file=sys.stderr)
     program = Program(args.program)
 
     prompt = f"""{args.task}
