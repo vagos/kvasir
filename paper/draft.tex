@@ -791,19 +791,46 @@ The system relies heavily on the quality and granularity of extracted or declare
 In cases where desired behaviors cannot be easily expressed using available predicates, or where plugins fail to extract meaningful constraints, the regeneration plan may be under-constrained, leading to brittle or incorrect outputs. The framework is extensible, but each new property class requires the development of a new plugin that will provide a set of pre- and post-conditions, an extractor, and a verifier.
 
 \heading{Trust model and correctness}
-\sys does not provide formal guarantees of semantic equivalence to the original program. Instead, correctness is defined relative to a set of enforced properties. This means that correctness is only as strong as the property definitions and associated verifiers.
-In the presence of underspecified or unverifiable goals, regenerated code may exhibit unanticipated behavior, even if it passes all checks.
+\sys
+does not provide formal guarantees
+of semantic equivalence
+to the original program.
+Instead,
+correctness is defined relative to a set of enforced properties.
+This means that correctness is only as strong as the property definitions and associated verifiers.
+In the presence of underspecified or unverifiable goals,
+regenerated code
+may exhibit unanticipated behavior,
+even if it passes all checks. 
+
 
 \heading{LLM limitations}
-The generative synthesis phase is subject to the inherent variability and failure modes of large language models. These include hallucinations, sensitivity to prompt phrasing, and inconsistency under minor input changes.
-\sys does not mitigate these risks, but allows their detection through post-hoc verification.
-In cases where the system finds no satisfactory candidate, regeneration may fail and require manual intervention.
+The generative synthesis phase
+is subject to the inherent variability and failure modes
+of large language models.
+These include hallucinations,
+sensitivity to prompt phrasing,
+and inconsistency
+under minor input changes.
+\sys does not mitigate these risks,
+but allows their detection
+through post-hoc verification.
+In cases where the system finds no satisfactory candidate,
+regeneration fails.
+
 
 \heading{Language-specific support}
-Although some components of \sys are language-agnostic (\eg logic-based planning), others---particularly extraction and verification plugins are not.
-Supporting a new language requires implementing language-specific analyzers and constraints. This modularity is deliberate, but it does limit out-of-the-box generality.
-Work on a unified language representation~\cite{koppel2018onetool,bap2011,dillig2009sail}, is relevant to overcomming this limitation.
-The current \sys prototype supports Python, JavaScript, Haskell, and C.
+Although some components of \sys are language-agnostic (\eg logic-based planning),
+others---particularly extraction and verification plugins are not.
+Supporting a new language
+requires implementing language-specific analyzers and constraints.
+This modularity is deliberate,
+but it does limit out-of-the-box generality.
+Work on a unified language representation~\cite{koppel2018onetool,bap2011,dillig2009sail},
+is relevant to overcomming this limitation.
+The current \sys prototype
+supports Python, JavaScript, Haskell, and C. 
+
 
 \heading{Future directions}
 Extensions that could improve \sys's capabilities include richer property languages (\eg temporal or dataflow properties), tighter integration with formal verification tools, and cross-component reasoning for coordinated rewrites.
