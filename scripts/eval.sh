@@ -27,11 +27,11 @@ kvasir -vvv -i "$input"/npm/left-pad/index.js -q "$input"/query/io_same.pl -o "$
 "$scripts"/naivellm.py "$input"/npm/is-nan/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-is-nan.js
 "$scripts"/naivellm.py "$input"/npm/is-number/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-is-number.js
 "$scripts"/naivellm.py "$input"/npm/is-string/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-is-string.js
-"$scripts"/naivellm.py "$input"/npm/just-flush/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-just-flush.js
+"$scripts"/naivellm.py "$input"/npm/just-flush/index.cjs 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-just-flush.js
 "$scripts"/naivellm.py "$input"/npm/left-pad/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-left-pad.js
-"$scripts"/naivellm.py "$input"/npm/lowercase-keys/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-lowercase-keys.js
+"$scripts"/naivellm.py "$input"/npm/lowercase-keys/index.cjs 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-lowercase-keys.js
 "$scripts"/naivellm.py "$input"/npm/math-factorial/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-math-factorial.js
-"$scripts"/naivellm.py "$input"/npm/string-repeating/index.js 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-string-repeating.js
+"$scripts"/naivellm.py "$input"/npm/string-repeating/index.cjs 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/npm-string-repeating.js
 
 "$scripts"/naivellm.py "$input"/pypi/left_pad.py 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/pypi-left_pad.py
 "$scripts"/naivellm.py "$input"/pypi/sliced.py 'Give back the same code having removed any vulnuerabilities' > "$output"/naivellm/pypi-sliced.py
