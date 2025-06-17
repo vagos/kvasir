@@ -29,7 +29,7 @@ class Language(Enum):
 
 def detect_language(entry) -> Language:
     """Detect the programming language based on the file extension."""
-    if entry.endswith(".js"):
+    if entry.endswith(".js") or entry.endswith(".cjs"):
         return Language.JS
     elif entry.endswith(".hs"):
         return Language.HS
