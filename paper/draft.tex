@@ -1,4 +1,4 @@
-\documentclass[noacm,sigplan]{acmart}
+\documentclass[noacm,sigplan,review]{acmart}
 
 % \acmSubmissionID{PAPER ID}
 \renewcommand\footnotetextcopyrightpermission[1]{}
@@ -33,6 +33,7 @@
 \usepackage{cleveref}
 \usepackage{dirtytalk}
 \usepackage{textgreek}
+\usepackage{oplotsymbl}
 
 \def\eg{{\em e.g.}, }
 \def\ie{{\em i.e.}, }
@@ -103,6 +104,7 @@ Given a transformation query, and a source program, \sys extracts a minimal set
   It then synthesizes a new program $P'$ that satisfies the query, verifying
   that wanted properties are present and unwanted properties are absent in $P'$.
 }
+  \label{fig:overview}
 \end{figure}
 
 
@@ -125,7 +127,9 @@ and patch security vulnerabilities~\cite{ikegami2022userefactoringsecurityvulner
 These transformations, are often brittle, time-consuming, and require significant expertise.
 
 Recent advances in large language models (LLMs) have opened new possibilities for automating program transformation and synthesis tasks, making them attractive tools for software evolution, albeit with caveats.
-This flexibility has positioned them as attractive tools for software evolution.
+This flexibility has positioned them as attractive tools for software evolution
+compared to traditional program synthesis techniques, which often struggle
+to scale to real-world settings or across languages and require significant developer involvement~\cite{reynolds2019syguscomp,leino2016dafny,wu2023programming,dynamoth2016,cambronero2019active}.
 LLMs can translate code across languages~\cite{ou2025enhancingllmbasedcodetranslation},
 refactor complex modules~\cite{ziftci2025migrating},
 and even generate entire components from scratch~\cite{huynh2025largelanguagemodelscode}.
@@ -141,8 +145,8 @@ This paper present \sys, a system for \emph{controllable program regeneration}.
 to express transformation goals declaratively, as logical constraints over
 program properties such as input/output behavior, side-effect freedom, target
 language, trace equivalence, or modular structure.
-Given a source program and
-such a query, \sys extracts a minimal set of relevant properties, guided by a
+As shown in \cref{fig:overview}, given a source program and
+a query, \sys extracts a minimal set of relevant properties, guided by a
 logic engine and a domain-specific knowledge base, and synthesizes a new
 program that satisfies the desired constraints.
 
@@ -202,9 +206,9 @@ target language, lines of code, and others.
 Given a program and a query over desired properties, \sys selects a minimal set
 of properties to extract from the original program, then attempts to synthesize
 a new program that satisfies the query.
-\sys casts this process as a
-maximum-satisfiability (MaxSAT) problem~\cite{sung2006maximum}, optimizing for the smallest extraction
-effort necessary to enable transformation.
+\sys casts this process as an optimization problem, where the goal is to find a
+program that satisfies the query while preserving as much of the original
+program’s properties as possible.
 If the query is unsatisfiable under
 the constraints or transformations, \sys issues an error
 message, showing the conflict.
@@ -721,7 +725,7 @@ When no test suite is available, we only do manual inspection.
 
 \sys succeeds in all of the Rosetta Code benchmarks, code is correct, we had to manually verify it as no test cases are available.
 \sys regenerates correctly all npm and PyPi utilities, it does not introduce and sideffectful or malicious behavior.
-The synthesized programs reveal several interesting insights and patterns.
+The synthesized programs reveal interesting insights and patterns.
 \sys-generated code often lacks the optimizations commonly
 implemented by library developers, such as early exits or caching.
 For instance, the \texttt{left-pad} library, precomputes padding for strings below a certain length
@@ -831,12 +835,42 @@ controllable transformations than prompt-only LLM-based systems.
 
 \section{Related Work}
 
+% \begin{table*}
+%   \centering
+%   \caption{
+%     \textbf{Comparison of transformation paradigms.}
+%     \sys combines symbolic planning, property reasoning, and guided regeneration.
+%   }
+%   \label{tbl:comparison}
+%     \begin{tabular}{lcccccccc}
+% \toprule
+% \textbf{Approach} & 
+% \rotatebox{90}{\textbf{Uses Input}} &
+% \rotatebox{90}{\textbf{Decl. Goals}} &
+% \rotatebox{90}{\textbf{Neg. Const.}} &
+% \rotatebox{90}{\textbf{Opt. Support}} &
+% \rotatebox{90}{\textbf{Modular}} &
+% \rotatebox{90}{\textbf{Explainable}} &
+% \rotatebox{90}{\textbf{Scoped}} & 
+% Source \\
+% \midrule
+% Classical Synthesis & $\squad$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & \cite{alur2013sygus, solar2008sketch} \\
+% Refactoring Tools & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squadfillhr$ & $\squadfillhr$ & \cite{} \\
+% PBE Synthesis & $\squad$ & $\squadfill$ & $\squad$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & \cite{} \\
+% CEG Synthesis & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & \cite{solar2008sketch} \\
+% Pure LLMs & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & \cite{} \\
+% \textbf{\sys} & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & (this paper) \\
+% \bottomrule
+% \end{tabular}
+% \end{table*}
+
 \heading{Program synthesis}
 Program synthesis research spans a rich space of techniques.
 Classical techniques emphasize correctness and
-interpretability, synthesizing programs from specifications~\cite{alur2013syntax, feser2015synthesizing, gulwani2011automating},
-type constraints \cite{polikarpova2016program},
-or examples \cite{jha2010oracle, raza2018disjunctive, singh2016blinkfill}.
+interpretability, synthesizing programs from specifications~\cite{alur2013syntax, feser2015synthesizing, gulwani2011automating,leino2016dafny},
+type or syntax constraints \cite{polikarpova2016program,reynolds2019syguscomp},
+or examples~\cite{jha2010oracle, raza2018disjunctive, singh2016blinkfill,wu2023programming},
+which are provided either by users or automatically inferred~\cite{cambronero2019active,harp:ccs:2021}
 These works often target narrowly
 defined domains such as string manipulation~\cite{harp:ccs:2021} or data migration
 \cite{yaghmazadeh2018automated} and focus on ensuring provable guarantees.
@@ -849,23 +883,18 @@ with reasoning under negation or satisfying structured constraints~\cite{xu2023l
 Unlike purely symbolic or purely neural approaches, it leverages LLMs within a
 constrained planning framework to guide transformations while remaining
 responsive to property-based requirements.
-This design combines
-the scalability of LLM-assisted program sysnthesis with the controllability and robustness of symbolic
-reasoning. % TODO: focus on that \sys focuses on this specific problem domain
 
 \heading{Program transformations and refactoring}
 The evolution and maintenance of software systems often involve transformations
-such as refactoring, translation, or security hardening. Foundational work on
-refactoring~\cite{Fowler99} and its taxonomy~\cite{Mens04} characterizes the
-space of behavior-preserving modifications. More recent perspectives emphasize
-developer experience and usability, particularly in the context of APIs~\cite{Myers16}.
+such as refactoring~\cite{Fowler99,Mens04,Myers16}, translation, or security hardening. % TODO: Add more citations
 
 Tools in this space often operate via syntax-tree transformations or
 domain-specific templates. Verification-based methods such as \textsc{Dafny}
-\cite{Leino10} and \textsc{CBMC} \cite{Clarke04} ensure functional correctness
+\cite{leino2016dafny} and \textsc{CBMC} \cite{Clarke04} ensure functional correctness
 but require heavy formalization.
 Others automate migration via
 programming-by-example or interactive guidance \cite{gulwani2017program, le2017interactive}.
+
 
 Kvasir aims to generalize this landscape by treating transformations as
 goal-directed regenerations---rather than prescriptive rewrites, driven by
@@ -886,9 +915,6 @@ representation in verification and synthesis pipelines.
 process, while also uses its straighftorward optimization capabilities.
 For each transformation task, \sys formulates the property-satisfaction problem as a logic query and uses an ASP solver to
 synthesize a feasible transformation plans.
-This enables global reasoning across program components and enforces
-user-specified constraints that are difficult for neural models to respect.
-In addition, it offers a level of explainability that is useful in case transformations end up incorrect.
 
 \section{Discussion and Limitations}
 \label{sec:discussion}
@@ -975,5 +1001,40 @@ correctness, explainability, and developer control as first-class citizens.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
+
+\appendix
+
+\section{A Primer on Answer Set Programming (ASP)}
+\label{sec:asp}
+
+\emph{Answer Set Programming (ASP)} is a declarative logic programming paradigm
+that generalizes Datalog by supporting nonmonotonic reasoning,
+negation-as-failure, and optimization. \sys uses ASP to represent and solve
+regeneration planning tasks by encoding properties, constraints, and goals as
+logic rules.
+
+\heading{From Datalog to ASP}
+Like Datalog, ASP programs consist of rules of the form:
+\begin{verbatim}
+head :- body.
+\end{verbatim}
+
+But unlike Datalog
+ASP supports \emph{negation-as-failure} using \texttt{not}
+ASP allows \emph{disjunctions} and \emph{constraints}
+ASP evaluates programs under the \emph{stable model semantics}, which may yield
+multiple answer-sets (models), each representing a consistent solution
+
+\heading{Example: Feature Selection}
+\begin{verbatim}
+{ select(a); select(b); select(c) }.
+
+:- select(a), select(b).   % a and b are incompatible
+
+#maximize { X : select(X) }.   % Prefer selecting more features
+\end{verbatim}
+
+This program searches over subsets of \texttt{\{a,b,c\}}, excludes those
+violating constraints, and returns models with maximal selections.
 
 \end{document}

@@ -242,15 +242,6 @@ numpages = {8}
   year      = {2004}
 }
 
-@article{Leino10,
-  author  = {Leino, K. Rustan M.},
-  title   = {Dafny: An Automatic Program Verifier for Functional Correctness},
-  journal = {Lecture Notes in Computer Science},
-  year    = {2010},
-  volume  = {7141},
-  pages   = {348--370}
-}
-
 @book{alur2013syntax,
   title={Syntax-guided synthesis},
   author={Alur, Rajeev and Bodik, Rastislav and Juniwal, Garvit and Martin, Milo MK and Raghothaman, Mukund and Seshia, Sanjit A and Singh, Rishabh and Solar-Lezama, Armando and Torlak, Emina and Udupa, Abhishek},
@@ -661,4 +652,128 @@ isbn="978-3-642-22110-1"
   author={Azzopardi, Shaun and Piterman, Nir and Schneider, Gerardo and Di Stefano, Luca},
   journal={arXiv preprint arXiv:2307.09776},
   year={2023}
+}
+
+@inproceedings{solar2008sketch,
+  title = {Sketching Your Way to Correctness},
+  author = {Solar-Lezama, Armando},
+  booktitle = {Proceedings of the International Conference on Programming Language Design and Implementation (PLDI)},
+  year = {2008},
+  pages = {362--372}
+}
+
+@inproceedings{torlak2013rosette,
+  title = {Growing Solver-Aided Languages with Rosette},
+  author = {Torlak, Emina and Bod{\'{\i}}k, Rastislav},
+  booktitle = {Proceedings of Onward! 2013},
+  year = {2013},
+  pages = {135--152},
+  doi = {10.1145/2509578.2509586}
+}
+
+@article{alur2013sygus,
+  title = {Syntax-Guided Synthesis},
+  author = {Alur, Rajeev and Bod{\'{\i}}k, Rastislav and Juniwal, Vipul and McMillan, Kenneth L. and Raghothaman, Mukund and Udupa, Abhishek and others},
+  journal = {Proceedings of the IEEE},
+  volume = {10},
+  number = {1},
+  year = {2013}
+}
+
+@inproceedings{reynolds2019syguscomp,
+  title = {SyGuS-Comp 2018: Results and Analysis},
+  author = {Alur, Rajeev and Fisman, Dana and Padhi, Saswat and Singh, Rishabh and Udupa, Abhishek},
+  booktitle = {arXiv preprint arXiv:1904.07146},
+  year = {2019}
+}
+
+@inproceedings{leino2016dafny,
+  title = {Dafny: An Automated Program Verifier for Functional Correctness},
+  author = {Leino, K. Rustan M.},
+  booktitle = {Proceedings of LPAR},
+  year = {2016}
+}
+
+@article{wu2023programming,
+  title={Programming by example made easy},
+  author={Wu, Jiarong and Wei, Lili and Jiang, Yanyan and Cheung, Shing-Chi and Ren, Luyao and Xu, Chang},
+  journal={ACM Transactions on Software Engineering and Methodology},
+  volume={33},
+  number={1},
+  pages={1--36},
+  year={2023},
+  publisher={ACM New York, NY, USA}
+}
+
+@inproceedings{dynamoth2016,
+author = {Durieux, Thomas and Monperrus, Martin},
+title = {DynaMoth: dynamic code synthesis for automatic program repair},
+year = {2016},
+isbn = {9781450341516},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2896921.2896931},
+doi = {10.1145/2896921.2896931},
+abstract = {Automatic software repair is the process of automatically fixing bugs. The Nopol repair system [4] repairs Java code using code synthesis. We have designed a new code synthesis engine for Nopol based on dynamic exploration, it is called DynaMoth. The main design goal is to be able to generate patches with method calls. We evaluate DynaMoth over 224 of the Defects4J dataset. The evaluation shows that Nopol with DynaMoth is capable of synthesizing patches and enables Nopol to repair new bugs of the dataset.},
+booktitle = {Proceedings of the 11th International Workshop on Automation of Software Test},
+pages = {85–91},
+numpages = {7},
+location = {Austin, Texas},
+series = {AST '16}
+}
+
+@inproceedings{cambronero2019active,
+  title={Active learning for software engineering},
+  author={Cambronero, Jos{\'e} P and Dang, Thurston HY and Vasilakis, Nikos and Shen, Jiasi and Wu, Jerry and Rinard, Martin C},
+  booktitle={Proceedings of the 2019 ACM SIGPLAN International Symposium on New Ideas, New Paradigms, and Reflections on Programming and Software},
+  pages={62--78},
+  year={2019}
+}
+
+Program analysis using declarative languages:
+
+@inproceedings{scholz2016datalogfastpa,
+author = {Scholz, Bernhard and Jordan, Herbert and Suboti\'{c}, Pavle and Westmann, Till},
+title = {On fast large-scale program analysis in Datalog},
+year = {2016},
+isbn = {9781450342414},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/2892208.2892226},
+doi = {10.1145/2892208.2892226},
+abstract = {Designing and crafting a static program analysis is challenging due to the complexity of the task at hand. Among the challenges are modelling the semantics of the input language, finding suitable abstractions for the analysis, and handwriting efficient code for the analysis in a traditional imperative language such as C++. Hence, the development of static program analysis tools is costly in terms of development time and resources for real world languages. To overcome, or at least alleviate the costs of developing a static program analysis, Datalog has been proposed as a domain specific language (DSL). With Datalog, a designer expresses a static program analysis in the form of a logical specification. While a domain specific language approach aids in the ease of development of program analyses, it is commonly accepted that such an approach has worse runtime performance than handcrafted static analysis tools. In this work, we introduce a new program synthesis methodology for Datalog specifications to produce highly efficient monolithic C++ analyzers. The synthesis technique requires the re-interpretation of the semi-naive evaluation as a scaffolding for translation using partial evaluation. To achieve high-performance, we employ staged-compilation techniques and specialize the underlying relational data structures for a given Datalog specification. Experimentation on benchmarks for large-scale program analysis validates the superior performance of our approach over available Datalog tools and demonstrates our competitiveness with state-of-the-art handcrafted tools.},
+booktitle = {Proceedings of the 25th International Conference on Compiler Construction},
+pages = {196–206},
+numpages = {11},
+keywords = {Compiler, Datalog, Program Synthesis, Static Program Analysis},
+location = {Barcelona, Spain},
+series = {CC '16}
+}
+
+@inproceedings{liu2023program,
+  title={Program repair guided by datalog-defined static analysis},
+  author={Liu, Yu and Mechtaev, Sergey and Suboti{\'c}, Pavle and Roychoudhury, Abhik},
+  booktitle={Proceedings of the 31st ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering},
+  pages={1216--1228},
+  year={2023}
+}
+
+@inproceedings{scholz2015datalog,
+  title={A datalog source-to-source translator for static program analysis: An experience report},
+  author={Scholz, Bernhard and Vorobyov, Kostyantyn and Krishnan, Padmanabhan and Westmann, Till},
+  booktitle={2015 24th Australasian Software Engineering Conference},
+  pages={28--37},
+  year={2015},
+  organization={IEEE}
+}
+
+@article{abeysinghe2024flan,
+  title={Flan: an expressive and efficient datalog compiler for program analysis},
+  author={Abeysinghe, Supun and Xhebraj, Anxhelo and Rompf, Tiark},
+  journal={Proceedings of the ACM on Programming Languages},
+  volume={8},
+  number={POPL},
+  pages={2577--2609},
+  year={2024},
+  publisher={ACM New York, NY, USA}
 }
