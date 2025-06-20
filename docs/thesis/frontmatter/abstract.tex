@@ -1,0 +1,19 @@
+\section*{Abstract}
+\addcontentsline{toc}{section}{Abstract}
+
+Modern software systems are constantly evolving—requiring developers to
+  refactor legacy code, adapt to changing APIs, translate across languages, and
+  patch security vulnerabilities. These transformations are often brittle,
+  manual, and error-prone. Large language models (LLMs) offer new opportunities
+  for automating such tasks, but their outputs are shaped by surface cues, lack
+  semantic guarantees, and require brittle prompting strategies. This paper
+  presents \sys, a system for controllable program regeneration that combines
+  logic-based planning with LLM-guided synthesis.
+  By expressing transformation
+  goals as declarative constraints over program properties---such as input/output
+  behavior, side-effect freedom, language, or modular structure, \sys
+  regenerates code that satisfies explicit semantic requirements.
+  We demonstrate \sys across a wide range of tasks, including security
+  hardening, language translation, and idiomatic rewriting, and highlight its
+  ability to deliver interpretable, high-quality transformations with minimal
+  developer guidance.
