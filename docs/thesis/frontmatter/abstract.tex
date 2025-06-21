@@ -9,11 +9,19 @@ Modern software systems are constantly evolving—requiring developers to
   semantic guarantees, and require brittle prompting strategies. This paper
   presents \sys, a system for controllable program regeneration that combines
   logic-based planning with LLM-guided synthesis.
-  By expressing transformation
-  goals as declarative constraints over program properties---such as input/output
-  behavior, side-effect freedom, language, or modular structure, \sys
-  regenerates code that satisfies explicit semantic requirements.
-  We demonstrate \sys across a wide range of tasks, including security
-  hardening, language translation, and idiomatic rewriting, and highlight its
-  ability to deliver interpretable, high-quality transformations with minimal
-  developer guidance.
+
+Kvasir operates in four stages: (1) a symbolic planner constructs a
+transformation plan using logic rules and a domain-aware knowledge base; (2)
+property extractors analyze the input program to gather relevant semantic
+information; (3) a language model synthesizes candidate programs guided by
+a structured prompt assembled from extracted properties; and (4) a verification
+and feedback loop checks whether the output meets the desired properties and
+iteratively refines the generation process through additional feedback.
+
+\sys is evaluated on a diverse set of program transformation tasks
+including security hardening, language translation, idiomatic rewriting, de-obfuscation,
+and modular refactoring.
+Target programs are sourced from high-profile supply-chain attacks, 
+online repositories, programming competitions, and real-world software projects.
+\sys produces high-quality outputs that satisfy goals in all but two cases,
+even on instances where a state-of-the-art LLM fails to do so.
