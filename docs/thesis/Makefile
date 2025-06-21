@@ -1,4 +1,4 @@
-## Update "TARGETS" to match the main .tex files (without extension).
+.PHONY: proof clean all
 
 TARGETS = main
 BIBFILES = $(wildcard *.bib)
@@ -18,3 +18,13 @@ all: $(PDFS)
 clean:
 	latexmk -C
 	/bin/rm -rf $(GENPDFS) _minted* *-SAVE-ERROR $(PDFS)
+
+proof:
+	echo "weasel words: "
+	sh bin/noweasel *.tex
+	echo
+	echo "passive voice: "
+	sh bin/nopassive *.tex
+	echo
+	echo "duplicates: "
+	perl bin/nodups *.tex
