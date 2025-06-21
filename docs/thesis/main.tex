@@ -29,7 +29,7 @@
 \chapter{Introduction}
 \begin{figure}[t]
   % https://docs.google.com/drawings/d/1LAmdVYjfAID24eSM-hl5PRhVg9fRMJMWYETsvvcyAuU/edit?usp=sharing
-  \includegraphics[width=\columnwidth]{figs/kvasir_overview.pdf}
+  \includegraphics[width=.9\columnwidth]{figs/kvasir_overview.pdf}
   \caption{\textbf{\sys overview}
 Given a transformation query, and a source program, \sys extracts a minimal set
   of properties,
@@ -257,8 +257,8 @@ preserving its I/O behavior.
 \begin{wrapfigure}[3]{r}{.5\columnwidth}
   \vspace{-5pt}
   \begin{minted}{prolog}
-equal(graph(P), graph(P_)).
-#min len(P_).
+graph(p_, I, O) :- graph(p, I, O).
+#min N: len(p_, N).
   \end{minted}
 \end{wrapfigure}
 \sys extracts the set of properties \ttt{sig(F)} and \ttt{graph(F)} from the original program, where \texttt{sig(F)} is the
@@ -297,11 +297,12 @@ Having the database initialization being in the same function as
 the database access has architectural and performance implications.
 In addition, there exist systems that can benefit from further decomposition
 of an application towards automatic distribution, parallelization or security~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
-\begin{wrapfigure}[5]{r}{.7\columnwidth}
+\begin{wrapfigure}[6]{r}{.7\columnwidth}
   \vspace{-10pt}
   \begin{minted}{prolog}
 db('music.db').
-trace_sql(p_, T) :- trace_sql(p, T).
+trace_sql(p_, I, T) :- trace_sql(p, I, T),
+                       graph(p, I, _).
 func(f1). func(f2).
 graph(call(f2, call(f1), I), I, O) :- graph(p, I, O).
 \end{minted}
@@ -427,10 +428,7 @@ following key contraint:
 through the $\mathsf{min}$, $\mathsf{max}$, and $\mathsf{not}$ directives.
 Without loss of generality, the base case is described, explicitly mentioning any significant semantic difference when necessary.
 
-Additionally, the system minimizes the number of extracted properties:
-\[
-\text{minimize} \left|\left\{ X \mid \mathsf{can}(X) \right\}\right|
-\]
+Additionally, the system takes advantage of ASP's least stable model semantics.
 Essentially, the planner tries to give the synthesizer the least amount of information
 possible, as long as all regeneration goals are fulfilled.
 
@@ -453,25 +451,25 @@ Such axioms allow inferred properties to trigger downstream constraints or synth
 
 \begin{listing}
   \begin{minted}[frame=lines, fontsize=\small]{prolog}
+% --- Base program facts ---
 language(p, c).
-can(len(p)). % len plugin
-can(signature(p)). % signature plugin
-can(js2hs(p)). % js2hs plugin
+
+% --- Plugin: len ---
+can(len(p)). 
+% Plugin: signature ---
+can(signature(p)).
+% ---  Plugin: javascript2haskell ---
+can(js2hs(p)). 
 do(language(p, haskell)) :- do(js2hs(p)).
 :- do(js2hs(p)), not language(p, javascript).
 
-% Core solver logic
-:- do(language(p, X)), language(p, Y), X != Y,
-    not goal(language(p, X)).
-{ do(X) } :- can(X), not goal_min(X).
-{ do_min(X) } :- can(X).
-ndo(N) :- N = #count { X : do(X) }.
-#maximize { N : ndo(N) }.
-:- goal(X), not do(X).
-:- goal_min(X), not do_min(X).
-:- do(language(P, L1)), do(language(P, L2)), L1 != L2.
+% ---- Axioms ----
+:- X, not can(X). % All transformations must be possible
+:- language(p, L1), language(p, L2)),
+    L1 != L2. % A program can have one language
 
-goal_min(len(p)). % User query
+% --- User query ---
+#min len(p). % User query
 \end{minted}
   \caption{\textbf{Example \sys logic program.}
   This is a lightly simplified version of the logic program that produces the plan for the idiomatization task~(\cref{sec:example}). 
@@ -483,8 +481,76 @@ goal_min(len(p)). % User query
   \label{lst:logic-example}
 \end{listing}
 
-\heading{Abstract and concrete space}
+\heading{Compilation to ASP}
+Given a source program written in the \sys query language, the compiler performs a syntactic
+desugaring into ASP rules~(\cref{fig:asp-compilation}).
+
+\begin{figure}[h]
+\centering
+\small
+\begin{tabular}{l}
+\textbf{toasp} (q : Query) : ASPCode {$\leftarrow$} \textbf{match} q \textbf{with} \\[0.5ex]
+\quad \textbar~$X$: ungroundable($X$) {$\rightarrow$} \texttt{do(}$X$\texttt{)} \\
+\quad \textbar~\#\texttt{min}~$X$ {$\rightarrow$} \texttt{do\_min(}$X$\texttt{)} \\
+\quad \textbar~\#\texttt{max}~$X$ {$\rightarrow$} \texttt{do\_max(}$X$\texttt{)} \\
+\textbf{end}
+\end{tabular}
+\caption{DSL-to-ASP compilation rules. Ungroundable atoms are wrapped in \texttt{do} to denote candidate actions. Optimization directives are compiled to \texttt{do\_min} and \texttt{do\_max}.}
+\label{fig:asp-compilation}
+\end{figure}
+
+These transformations yield a groundable ASP program that can be evaluated by the backend ASP solver.
+
 % TODO: Show graph showing how properties go from the abstract logic domain to the real domain through a translation barrier
+\heading{Logic and concrete space}
+\sys operates at the boundary between two representational domains: a symbolic
+\emph{logic space}, where transformations over program properties are expressed, and
+a \emph{concrete space}, where actual programs, inputs, outputs, and traces
+reside.
+
+In the logic space, properties are encoded as predicates over abstract program
+identifiers.
+To bridge this abstraction gap, \sys given the set of true predicates
+from the logic space, extracts the corresponding concrete properties from the
+source program.
+For example, the predicate $\texttt{inputs}(p, I)$ in the logic space
+will be concretized to set of inputs $I$ by invoking the \texttt{input} plugin,
+which uses an LLM to generate a set of inputs for the program $p$.
+Similarly, the predicate $\texttt{graph}(p, I, O)$ will be concretized to a set of
+input-output pairs $(I, O)$ by executing the program $p$ on the inputs $I$ and
+recording the outputs $O$.
+After regeneration, the predicates over the concrete regenrated program $p\_$
+will be checked regarding their relationship to the same properties over program $p$
+in the logic space.
+An equality relationship is one where the grounded version of the predicate
+$X$ is the same between the two programs, modulo the program identifier~(\eg, $\texttt{graph}(p, i, o) \equiv \texttt{graph}(p\_, i, o)$).
+Equality is defined differently for each property, and is enforced by the corresponding plugin.
+Similarly, minimization and maximization relationships are defined as
+the concrete property value being less than or greater than the original program's value, respectively.
+Again, the less-than and greater-than operators are defined by the plugin that verifies the property.
+
+% In the current \sys implementation, this translation is one-way,
+% however the system can be extended to support two-way translation, where properties extracted
+% can be used to generate new properties in the logic space.
+
+As shown in \cref{fig:logic-to-concrete}, this process constitutes a
+translation barrier: declarative goals over properties like \texttt{inputs},
+\texttt{outputs}, and \texttt{traces} are realized through observation and
+instrumentation. Once aligned, the logic engine can reason over these grounded
+facts to drive transformation.
+
+% add figure
+\begin{figure}[h]
+\centering
+  % https://docs.google.com/drawings/d/1JdOfgpaVUy7_EgFyguRXHxFKdmZwyHaiHshnifHG0TQ/edit?usp=sharing
+  \includegraphics[width=.9\columnwidth]{figs/kvasir_logic-space.pdf}
+  \caption{\textbf{\sys transforms a program over its properties from the abstract logic space to the concrete space.}
+  Relationships between properties of the original and regenerated program are inferred 
+  from the query in combination with the knowledge base and enforced by \sys plugins.
+  }
+  \label{fig:logic-to-concrete}
+\end{figure}
+
 
 \heading{Extensibility}
 \sys decentralizes property extraction: plugins contribute $\mathsf{can}(\cdot)$ facts, and pre- and post-conditions, while the core planner resolves which properties to enforce based on goals, capabilities, and axioms.
@@ -604,6 +670,8 @@ We evaluate \sys along three axes:
 We evaluate \sys on six benchmark suites, summarized in \cref{tab:benchmarks}.
 Each task consists of an input program, a \sys query expressing desired
 properties, and a test suite or functional oracle.
+Each benchmark is executed three times. A regeneration is considered overal succesful 
+if it is correct, satisfies the query, and passes all tests all three times.
 The Rosetta Code~\cite{rosettacode} benchmarks include four programming tasks written in four different
 languages each (Python, JavaScript, C, and Haskell). 
 These include classic programs that do not require any language-specific features to implement.
@@ -634,14 +702,16 @@ The N column shows the number of programs/functions from each benchmar.
 \toprule
 Benchmark                          & Description         & N  & Task                                       & Source \\
 \midrule
-Rosetta Code                       & Programming tasks   & 16 & Language translation                       & \cite{rosettacode} \\
-Short utilities                    & npm and Pypi utilities & 13 & Pure and idiomatic regeneration    & \cite{regbench2025} \\
-SSCA                               & Sneaky SSAs         & 3  & Malicious code elimination                 & \cite{ev:eurosec:2022, ohm2020backstabber,copeland2019frightening} \\
-IOCCC                              & Obfuscated C code   & 2  & De-obfuscation                             & \cite{ioccc} \\
+Rosetta Code                       & Simple tasks   & 16 & Translation                       & \cite{rosettacode} \\
+Short utilities                    & npm/Pypi utilities & 13 & Parity & \cite{regbench2025} \\
+SSCA                               & Sneaky SCAs         & 3  & Attack elimination                 & \cite{ev:eurosec:2022, ohm2020backstabber,copeland2019frightening} \\
+IOCCC                              & Obfuscated C  & 2  & De-obfuscation                             & \cite{ioccc} \\
 Microbenchmarks                    &                     & 3  &                                            & \\
-\hspace{.5em} \ttt{flatmap-stream} & Secure regeneration &    & Pure regeneration and translation & \cite{es1}  \\
-\hspace{.5em} \ttt{Q\_rsqrt}       & C refactoring       &    & Idiomatic rewrite                          & \cite{fast_inv_sqrt}  \\
-\hspace{.5em} \textsf{rigidDB}     & Modularization      &    & Modularization                             & \cite{codewithsadeemusicplayer} \\
+\hspace{.5em} \ttt{flatmap-stream} & Flatmap utility &    & Purity \& translation & \cite{es1}  \\
+\hspace{.5em} \ttt{Q\_rsqrt}       & Reverse sqrt       &    & Idiomatic rewrite                          & \cite{fast_inv_sqrt}  \\
+\hspace{.5em} \textsf{rigidDB}     & Music database      &    & Modularization                             & \cite{codewithsadeemusicplayer} \\
+\midrule
+Total                              &                     & 37 &                                            & \\
 \bottomrule
 \end{tabular}
 \label{tab:benchmarks}
