@@ -104,7 +104,7 @@ library, where other components can invoke it as a programmable,
 constraint-guided regeneration module.
 
 % Leverages insights: (1) modern applications highly modular (2) the problem of LLM-assisted program transformations needs to be transformed in a way that a ground truth is readily available: the original program
-% (3) towards the generality and longevity of this solution the interface needs to be purely declarative, to allow independent progress of the underlying comopnents to give automatic benefits
+% (3) towards the generality and longevity of this solution the interface needs to be purely declarative, to allow independent progress of the underlying components to give automatic benefits
 
 % TODO: Add chapter references
 \heading{Contributions}
@@ -354,7 +354,7 @@ These phases interact through a shared representation of the program and its
 transformation goals.
 
 \heading{Plan construction}
-First, each of the available plugins contributes a set of pre and pos-conditions 
+First, each of the available plugins contributes a set of pre and post-conditions 
 to the logic engine.
 Essentially, these describe what needs to hold for an analysis to be applicable to the given 
 program and what properties \sys will preserve or transform after regeneration.
@@ -363,8 +363,8 @@ The full set of rules and predicates are used to construct an ASP program
 which is then given to an off-the-shelf solver~\cite{gebser2007clasp}.
 % TODO: Explain what the solvr does (optimization)
 From the solver's output, the planner constructs a plan that specifies which
-analysies \sys plugins should apply to the input program and what properties can be
-preserved during regeneration in order to fullfill the query.
+analyses \sys plugins should apply to the input program and what properties can be
+preserved during regeneration in order to fulfill the query.
 
 \heading{Property extraction} \sys then continues by analyzing the input program to
 extract the collection of properties.
@@ -376,7 +376,7 @@ applicable across languages~(\eg examples of input-output behavior), others are 
 
 \heading{Synthesis}
 Guided by the transformation plan, \sys creates a prompt template which is then
-augmented with the extracted properties, having them normalized to a human-readable text represantation.
+augmented with the extracted properties, having them normalized to a human-readable text representation.
 This prompt is then passed to an LLM instance.
 \sys does not include by default the original program's source code in the prompt.
 Instead, it uses the extracted properties to guide the LLM instance 
@@ -386,7 +386,7 @@ to synthesize a candidate program that satisfies the specified constraints.
 The final phase verifies that the
 synthesized program satisfies the target properties.
 If verification fails---due to a violated constraint or behavioral divergence---\sys uses this
-failure as a signal to refine the plan or resample the synthesis step.
+failure as a signal to refine the plan or re-sample the synthesis step.
 This forms a feedback loop: planning, synthesis, and verification interact until \sys
 produces a satisfactory program or the system exhausts its search.
 
@@ -457,13 +457,13 @@ Each property is a logical predicate over the program symbol $p$. Examples inclu
 A property $X$ appears as either an
   $\mathsf{can}(X)$ atom, which denotes that the system is capable of extracting or inferring property $X$ from the input.
   Plugins add these facts and represent the system's capabilities.
-  a pure $X$ atom, which denotes that either the user has explicitly requested property $X$ to be enforced, or the planner has deduced that it is necessary to satisfy the query.
+  A pure $X$ atom denotes that either the user has explicitly requested property $X$ to be enforced, or the planner has deduced that it is necessary to satisfy the query.
 
 \heading{Planning over properties}
 The logic engine determines the set of active properties to enforce by solving
 a constrained optimization problem over the property set $P_r$.
 It satisfies the
-following key contraint:
+following key constraint:
 \begin{align*}
   X &\Leftarrow \mathsf{can}(X) &\text{Apply only extractable properties}
 \end{align*}
@@ -526,7 +526,7 @@ do(language(p, haskell)) :- do(js2hs(p)).
 
 \heading{Compilation to ASP}
 Given a source program written in the \sys query language, the compiler performs a syntactic
-desugaring into ASP rules~(\cref{fig:asp-compilation}).
+de-sugaring into ASP rules~(\cref{fig:asp-compilation}).
 
 \begin{figure}[h]
 \centering
@@ -557,12 +557,12 @@ To bridge this abstraction gap, \sys given the set of true predicates
 from the logic space, extracts the corresponding concrete properties from the
 source program.
 For example, the predicate $\texttt{inputs}(p, I)$ in the logic space
-will be concretized to set of inputs $I$ by invoking the \texttt{input} plugin,
+will be concertized to set of inputs $I$ by invoking the \texttt{input} plugin,
 which uses an LLM to generate a set of inputs for the program $p$.
-Similarly, the predicate $\texttt{graph}(p, I, O)$ will be concretized to a set of
+Similarly, the predicate $\texttt{graph}(p, I, O)$ will be concertized to a set of
 input-output pairs $(I, O)$ by executing the program $p$ on the inputs $I$ and
 recording the outputs $O$.
-After regeneration, the predicates over the concrete regenrated program $p\_$
+After regeneration, the predicates over the concrete regenerated program $p\_$
 will be checked regarding their relationship to the same properties over program $p$
 in the logic space.
 An equality relationship is one where the grounded version of the predicate
@@ -674,7 +674,7 @@ Examples include:
 
 Checkers are modular and contributed by plugins. Their combined results determine whether a candidate is considered valid under the current plan.
 For minimization and maximization goals, the verification phase uses the less-than or greater-than operators as are defined internally by the plugin verifying the given property.
-Verfication in this case checks if the property's value has decreased or increased compared 
+Verification in this case checks if the property's value has decreased or increased compared 
 to the previous regeneration attempt.
 If the value remains unchanged for two consecutive attempts, its considered satisfied.
 
@@ -686,7 +686,7 @@ Some forms are:
   \item \emph{Feedback loop}: \sys will provide the previous regeneration attempt 
     as an additional context to the LLM, together with an explanation of the properties that the regeneration violates, prompting it to adapt its output based on prior failures.
     This mode is only activated if the verifier knows that the output will not to taint
-    followupp regeneration attempts.
+    followup regeneration attempts.
   \item \emph{Fallback handling}: If a function repeatedly fails validation, \sys may leave the original version intact or mark it for manual inspection.
 \end{itemize}
 
@@ -707,7 +707,6 @@ The \sys evaluation is along three axes:
   \item[\textbf{Q1}] \textbf{Correctness and Regeneration Quality}: Does \sys preserve program behavior and produce high-quality programs?
   \item[\textbf{Q2}] \textbf{LLM Baseline}: How does \sys compare to naively prompting a large language model?
   \item[\textbf{Q3}] \textbf{Planning Efficiency \& Precision}: Does minimizing extracted properties help regeneration succeed faster and more reliably?
-    % TODO: Maybe make naive LLM Q3 and merge Q3 and Q2.
 \end{itemize}
 
 \section{Benchmarks \& Methodology}
@@ -715,7 +714,7 @@ The \sys evaluation is along three axes:
 The \sys evaluation comprises of six benchmark suites, summarized in \cref{tab:benchmarks}.
 Each task consists of an input program, a \sys query expressing desired
 properties, and a test suite or functional oracle.
-Each benchmark is executed three times. A regeneration is considered overal succesful 
+Each benchmark is executed three times. A regeneration is considered overall successful 
 if it is correct, satisfies the query, and passes all tests all three times.
 The Rosetta Code~\cite{rosettacode} benchmarks include four programming tasks written in four different
 languages each (Python, JavaScript, C, and Haskell). 
@@ -726,33 +725,33 @@ a program that computes the median of a list of numbers,
 and a program that reads a file and prints its contents to the console line-by-line.
 The npm benchmark includes ten popular (100.000+ weekly downloads) npm packages that implement utility
 functionality such as string manipulation, data structure transformations, and math.
-Similalry, the PyPi utilities benchmark includes three functions sourced from PyPi that implement similar functionality.
+Similarly, the PyPi utilities benchmark includes three functions sourced from PyPi that implement similar functionality.
 The SSCA dataset includes three sneaky supply-chain attacks that obfuscate malicious behavior in otherwise innocuous-looking code.
 The attack activates under specific environment conditions, such as the presence of a specific environment variable or specific inputs
-getting passed to the program. The attacks involve private key exfiltration~\cite{ohm2020backstabber}, Bitcoin private key theft~\cite{ev:eurosec:2022}, and an SSH backdoor installation~\cite{copeland2019frightening}.
+getting passed to the program. The attacks involve private key stealing~\cite{ohm2020backstabber}, Bitcoin private key theft~\cite{ev:eurosec:2022}, and an SSH backdoor installation~\cite{copeland2019frightening}
 and occur while the program still performs its advertised functionality.
 The IOCCC benchmark includes two programs from the International Obfuscated C Code Contest (IOCCC)~\cite{ioccc}.
 These programs are intentionally obfuscated, using advanced techniques such as bit manipulation, undefined behavior,
 and exploitation of the C preprocessor and the lax parsing rules of the C language.
-These programs perform mathematical computations like mersense primality testing and adding two numbers.
+These programs perform mathematical computations like Mersenne primality testing and adding two numbers.
 Finally, the microbenchmarks include three programs that implement the regeneration tasks discussed in \cref{sec:example}.
 
 \begin{table}[h]
 \centering
   \caption{\textbf{Benchmark summary}. 
   Benchmark programs come from online repositories, public archives, security research datasets, and often referenced examples in programming culture.
-The N column shows the number of programs/functions from each benchmar.
+The N column shows the number of programs/functions from each benchmark.
 }
 \begin{tabular}{llrll}
 \toprule
 Benchmark                          & Description         & N  & Task                                       & Source \\
 \midrule
 Rosetta Code                       & Simple tasks   & 16 & Translation                       & \cite{rosettacode} \\
-Short utilities                    & npm/Pypi utilities & 13 & Parity & \cite{regbench2025} \\
+Short utilities                    & npm/PyPi utilities & 13 & Parity & \cite{regbench2025} \\
 SSCA                               & Sneaky SCAs         & 3  & Attack elimination                 & \cite{ev:eurosec:2022, ohm2020backstabber,copeland2019frightening} \\
 IOCCC                              & Obfuscated C  & 2  & De-obfuscation                             & \cite{ioccc} \\
 Microbenchmarks                    &                     & 3  &                                            & \\
-\hspace{.5em} \ttt{flatmap-stream} & Flatmap utility &    & Purity \& translation & \cite{es1}  \\
+\hspace{.5em} \ttt{flatmap-stream} & Flat-map utility &    & Purity \& translation & \cite{es1}  \\
 \hspace{.5em} \ttt{Q\_rsqrt}       & Reverse sqrt       &    & Idiomatic rewrite                          & \cite{fast_inv_sqrt}  \\
 \hspace{.5em} \textsf{rigidDB}     & Music database      &    & Modularization                             & \cite{codewithsadeemusicplayer} \\
 \midrule
@@ -789,22 +788,21 @@ When no test suite is available, only manual inspection is performed.
 having verified manually that the output is functionally equivalent
 to the original, using both the original and translated reference
 implementations as guides.
-\sys regenerates correctly all npm and PyPi utilities, it does not introduce and sideffectful or malicious behavior.
+\sys regenerates correctly all npm and PyPi utilities, it does not introduce and side-effectful or malicious behavior.
 The synthesized programs reveal interesting insights and patterns.
 \sys-generated code often lacks the optimizations commonly
 implemented by library developers, such as early exits or caching.
-For instance, the \texttt{left-pad} library, precomputes padding for strings below a certain length
+For instance, the \texttt{left-pad} library, pre-computes padding for strings below a certain length
 and returns it directly.
 In contrast, \sys tends to produce straightforward
 implementations without attempting similar optimizations.
-\sys also omits domain-specific knowledge.
-For example, in the \texttt{is} family of libraries,
-\sys-generated code frequently fails to account for all edge cases.
+\sys also omits domain-specific knowledge:
+\sys-generated code frequently fails to account for all edge cases when they involve language-specific features (\eg \ttt{is-nan}).
 % \sys has weak performance on libraries that involve complex regexes or perform non-trivial math.
 For the SSCA benchmarks, \sys successfully regenerates all three malicious libraries, removing the malicious behavior while preserving the original functionality.
 For the flatmap-stream attack, \sys uses some domain-specific logic (encoded in its knowledge-base by the \ttt{js-stream} plugin) to generate a function that produces a node \ttt{Stream} object.
 For the IOCCC benchmarks, \sys regenerates the \ttt{adder} program, which is a simple program that adds two numbers,
-it also regenerates \ttt{mersenne} in regards that it correctly performs a naive mersenne primality testing, but it does not follow the non-obvious output scheme of the original program, which returns a non-zero hexadecimal number when $2^p - 1$ ($p$ being the input number) is not prime.
+it also regenerates \ttt{mersenne} in regards that it correctly performs a naive Mersenne primality testing, but it does not follow the non-obvious output scheme of the original program, which returns a non-zero hexadecimal number when $2^p - 1$ ($p$ being the input number) is not prime.
 For the microbenchmarks, \sys correctly regenerates the \ttt{flatmap-stream} program, producing a safe Haskell version that is idiomatic and preserves the original functionality.
 However, this version does not match exactly the semantics of the original one, as it operates over infinitely nested lists, rather than only one level deep ones.
 The \ttt{Q\_rsqrt} program includes the obvious, idiomatic computation of the inverse square root ($1/\sqrt{x}$) rather than the original bit-level manipulation.
@@ -832,10 +830,10 @@ The LLM gets the following prompt template:
 }
 
 For the Rosetta Code benchmarks, \gptmodel 
-succesful in all language translation tasks.
+successful in all language translation tasks.
 The original and LLM-generated code matches the semantics
 of the original one, confirmed after manually inspecting the generated code.
-Similarly, the LLM was succesful in transforming the npm and PyPi utilities towards
+Similarly, the LLM was successful in transforming the npm and PyPi utilities towards
 removing any vulnerabilities from them, as they are benign and the transformation
 involved the LLM simply repeating the original code without any changes.
 The SSCA benchmark tasks are more interesting, as they involve 
@@ -844,8 +842,8 @@ with two different versions. One is the original high-profile attack that appear
 with the second one being an attack that is semantically equivalent but with the source 
 having gone through an iterative loop where a second LLM is tasked with making the code ostensibly 
 secure. This involves adding integrity checks at all points in the program where a value is used.
-\gptmodel was succesful in eliminating the original attacks, but failed in \emph{all} 
-cases where the source code was particulalry crafted to appear secure, regenerating both 
+\gptmodel was successful in eliminating the original attacks, but failed in \emph{all} 
+cases where the source code was particularly crafted to appear secure, regenerating both 
 the original functionality and the attack.
 For the IOCCC benchmarks, \gptmodel also fails 
 in both cases to regenerate the programs in a way where the code's 
@@ -854,7 +852,7 @@ The \ttt{adder} program is regenerated as a program that prints the \ttt{argc} a
 while the \ttt{mersenne} program performs irrelevant arithmetic operations that 
 resemble the original source, and fails to even compile.
 For the microbenchmarks, \gptmodel is able to regenerate the \ttt{flatmap-stream} program, but fails to produce a Haskell version of it,
-as it overfits to the original JavaScript source code which uses the \ttt{Stream} API,
+as it over-fits to the original JavaScript source code which uses the \ttt{Stream} API,
 and fails to produce a Haskell program that is nor equivalent to the original, nor idiomatic.
 For the \ttt{Q\_rsqrt} program, \gptmodel fails to produces a program that idiomatically 
 computes the inverse square root, rather trying to minimize the number of lines in the program
@@ -884,12 +882,12 @@ In the \texttt{flatmap-stream} benchmark,
 whereas \sys generated pure rewrites by treating the source as
 untrusted and grounding regeneration in I/O behavior alone.
 Across all benchmarks, the planning step completes in under 50ms on average.
-Similalry, in the \ttt{Q\_rsqrt} benchmark, \gptmodel often produces bit-level
+Similarly, in the \ttt{Q\_rsqrt} benchmark, \gptmodel often produces bit-level
 manipulations that are not idiomatic in Haskell, while \sys generates a simple
 and idiomatic Haskell function that computes the inverse square root.
 This is guided by the fact the \sys extracts and provides to its backend model only the function signature 
 and length of the program, which it minimizes, without including the original source code,
-which as shown in the experimental results makes the model overfit its regeneration to it.
+which as shown in the experimental results makes the model over-fit its regeneration to it.
 \sys's I/O pair extraction also provides confidence that 
 the regenerated program has the same client-visible behavior as the original one, while 
 prompting a model like \gptmodel would always require manual inspection or the presence 
@@ -962,7 +960,7 @@ Others automate migration via
 programming-by-example or interactive guidance \cite{gulwani2017program, le2017interactive}.
 
 
-Kvasir aims to generalize this landscape by treating transformations as
+\sys aims to generalize this landscape by treating transformations as
 goal-directed regenerations---rather than prescriptive rewrites, driven by
 properties such as program behaviors and architectural goals, expressed declaratively.
 
@@ -978,20 +976,23 @@ declarative program analysis \cite{benton2007interactive}, automated planning
 representation in verification and synthesis pipelines.
 
 \sys uses ASP as its planning back-end for the planning, decision-making
-process, while also uses its straighftorward optimization capabilities.
+process, while also uses its straightforward optimization capabilities.
 For each transformation task, \sys formulates the property-satisfaction problem as a logic query and uses an ASP solver to
 synthesize a feasible transformation plans.
 
 \chapter{Discussion and Limitations}
 \label{sec:discussion}
 
-\sys supports property-guided regeneration of program fragments, with a particular focus on function-level rewrites. Its strength lies in combining symbolic reasoning and generative synthesis in a modular and interpretable framework. However, this design comes with inherent tradeoffs.
+\sys supports property-guided regeneration of program fragments, with a
+particular focus on function-level rewrites. Its strength lies in combining
+symbolic reasoning and generative synthesis in a modular and interpretable
+framework. However, this design comes with inherent trade-offs.
 
 \heading{Targeted regeneration}
 \sys is best used as a surgical tool for targeted regeneration tasks, not for whole-program synthesis or full language migration.
 It operates most effectively on localized units of code---such as individual functions, methods, or small modules, where behavior is self-contained and transformation goals can be expressed through explicit constraints.
 % Typical applications include rewriting high-risk, deprecated, or poorly understood code segments where correctness is critical and semantic preservation is essential.
-Broad, untargeted use may yield incomplete results and can be bottlenecked by the limited context of the back-end model \sys uses.
+Broad use may yield incomplete results and can be bottlenecked by the limited context of the back-end model \sys uses.
 
 \heading{Dependence on property specification}
 The system relies heavily on the quality and granularity of extracted or declared properties.
@@ -1034,11 +1035,15 @@ requires implementing language-specific analyzers and constraints.
 This modularity is deliberate,
 but it does limit out-of-the-box generality.
 Work on a unified language representation~\cite{koppel2018onetool,bap2011,dillig2009sail},
-is relevant to overcomming this limitation.
+is relevant to overcoming this limitation.
 The current \sys prototype
 supports Python, JavaScript, Haskell, and C. 
 
-% Overall, \sys offers a flexible framework for controlled regeneration, but its effectiveness depends on the specificity of goals, the availability of property logic, and the scope of the transformation task. Its design favors composability and clarity over full automation, aiming to serve as a building block in broader refactoring, auditing, or hardening pipelines.
+% Overall, \sys offers a flexible framework for controlled regeneration, but
+% its effectiveness depends on the specificity of goals, the availability of
+% property logic, and the scope of the transformation task. Its design favors
+% composability and clarity over full automation, aiming to serve as a building
+% block in broader refactoring, auditing, or hardening pipelines.
 
 \chapter{Conclusion}
 This paper introduced \sys, a system for property-guided program regeneration
@@ -1046,7 +1051,7 @@ that bridges the flexibility of large language models with the precision of
 logic-driven planning.
 By allowing developers to declaratively specify
 transformation goals as logical constraints, \sys elevates LLM-assisted program
-trasnformations to a controllable, interpretable, and iterative synthesis-verification
+transformations to a controllable, interpretable, and iterative synthesis-verification
 process.
 Evaluation demonstrates that \sys produces high-quality regenerations
 across diverse tasks, outperforming naive prompting baselines in correctness,
@@ -1089,7 +1094,7 @@ For instance, a reverse-engineering pipeline for
 proprietary or legacy systems could use \sys to regenerate and recompose
 well-behaved modules such as networking layer or the physics engine into new,
 repurposed applications.
-The vision here is \sys as a foundation for automated system understanding, adaptation, and reimagination.
+The vision here is \sys as a foundation for automated system understanding, adaptation, and re-imagination.
 
 \heading{Challenges in cross-language regeneration}
 Cross-language regeneration introduces challenges.
@@ -1108,7 +1113,7 @@ analysis---effectively using \sys recursively.
 \heading{Ethical and legal considerations}
 While this work has applied \sys exclusively to open-source software, its
 capabilities raise ethical and legal questions. Regenerating
-proprietary software, deobfuscating binaries, or reimplementing licensed
+proprietary software, de-obfuscating binaries, or reimplementing licensed
 systems into equivalent ones with more permissive licensing 
 could challenge existing norms and
 regulations. 
