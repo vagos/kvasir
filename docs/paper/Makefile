@@ -7,53 +7,35 @@ TEXFILES = $(wildcard *.tex)
 FIGURES =$(wildcard figures/*.pdf figures/*.tex)
 GENPDFS = $(patsubst %.svg,%.pdf,$(wildcard figures/*.svg))
 PDFS = $(addsuffix .pdf,$(TARGETS))
-BIBFILES=bib.bib
+BIBFILES=draft.bib
 
-LATEXMK      = latexmk
-LATEXMKFLAGS = -pdf \
-               -pdflatex="xelatex --shell-escape -interaction=nonstopmode" \
-               -use-make
 
-all: $(PDFS)
+all: once
 
-%.pdf: $(TEXFILES) $(FIGURES) $(BIBFILES)
-	$(LATEXMK) $(LATEXMKFLAGS) $<
+%.pdf: %.tex %.blg %.toc $(TEXFILES) $(FIGURES) $(BIBFILES)
+	pdflatex -shell-escape $*.tex
+	bibtex $*
+	pdflatex -shell-escape $*.tex
+	pdflatex -shell-escape $*.tex
 
 %.pdf: %.svg
 	inkscape --export-pdf=$@ $<
 
-continuous: draft.tex
-	$(LATEXMK) -pdf \
-	-pdflatex="xelatex --shell-escape -interaction=nonstopmode" \
-	-pvc $<
-
 once:
-	pdflatex --shell-escape draft.tex
+	pdflatex -shell-escape draft.tex
 	bibtex draft
-	pdflatex --shell-escape draft.tex
-	pdflatex --shell-escape draft.tex
+	pdflatex -shell-escape draft.tex
+	pdflatex -shell-escape draft.tex
 
 %.blg: $(GENPDFS) $(BIBFILES)
-	pdflatex --shell-escape $*.tex
+	pdflatex $*.tex
 	bibtex $*
-	pdflatex --shell-escape $*.tex
+	pdflatex $*.tex
 
 %.toc: %.tex $(GENPDFS)
-	pdflatex --shell-escape $*.tex
+	pdflatex $*.tex
 
 clean:
-	/bin/rm -rf $(PDFS) *.out *.fdb_latexmk *.synctex.gz *.dvi *.aux *.ps *~ *.log *.lot *.lof *.toc *.blg *.bbl -r _minted* $(GENPDFS)
-
-# Check style:
-proof:
-	echo "weasel words: "
-	sh bin/noweasel *.tex
-	echo
-	echo "passive voice: "
-	sh bin/nopassive *.tex
-	echo
-	echo "duplicates: "
-	perl bin/nodups *.tex
-
+	/bin/rm -f $(PDFS) *.dvi *.aux *.out *.ps *~ *.log *.lot *.lof *.toc *.blg *.bbl url.sty $(GENPDFS)
 
 FORCE:
