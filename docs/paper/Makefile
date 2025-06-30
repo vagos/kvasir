@@ -38,4 +38,12 @@ once:
 clean:
 	/bin/rm -f $(PDFS) *.dvi *.aux *.out *.ps *~ *.log *.lot *.lof *.toc *.blg *.bbl url.sty $(GENPDFS)
 
-FORCE:
+proof:
+	echo "weasel words: "
+	sh bin/noweasel *.tex
+	echo
+	echo "passive voice: "
+	sh bin/nopassive *.tex
+	echo
+	echo "duplicates: "
+	perl bin/nodups *.tex
