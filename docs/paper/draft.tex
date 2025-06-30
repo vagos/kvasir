@@ -36,6 +36,7 @@
 \usepackage{oplotsymbl}
 \usepackage{listings}
 \usepackage{flushend}
+\usepackage{float}
 
 \def\eg{{\em e.g.}, }
 \def\ie{{\em i.e.}, }
@@ -633,7 +634,7 @@ do(language(p, haskell)) :- do(js2hs(p)).
 Given a source program written in the \sys query language, the compiler performs a syntactic
 de-sugaring into ASP rules~(\cref{fig:asp-compilation}).
 
-\begin{figure}[h]
+\begin{figure}[htpb]
 \centering
 \small
 \begin{tabular}{l}
@@ -688,7 +689,7 @@ instrumentation. Once aligned, the logic engine can reason over these grounded
 facts to drive transformation.
 
 % add figure
-\begin{figure}[h]
+\begin{figure}[htpb]
 \centering
   % https://docs.google.com/drawings/d/1JdOfgpaVUy7_EgFyguRXHxFKdmZwyHaiHshnifHG0TQ/edit?usp=sharing
   \includegraphics[width=.9\columnwidth]{figs/kvasir_logic-space.pdf}
@@ -841,7 +842,7 @@ and exploitation of the C preprocessor and the lax parsing rules of the C langua
 These programs perform mathematical computations like Mersenne primality testing and adding two numbers.
 Finally, the microbenchmarks include three programs that implement the regeneration tasks discussed in \cref{sec:example}.
 
-\begin{table*}[h]
+\begin{table*}[htpb]
 \centering
   \caption{\textbf{Benchmark summary}. 
   Benchmark programs come from online repositories, public archives, security research datasets, and often referenced examples in programming culture.
@@ -873,7 +874,7 @@ shipped with the original software components as well as by manually inspecting
 the regenerated source code and report on correctness and the other query target metrics.
 When no test suite is available, only manual inspection is performed.
 
-\begin{table}[h]
+\begin{table}[htpb]
   \centering
   \caption{\textbf{Correctness result summary.} Number of tasks passing all tests (when present) and manual inspection.}
   \begin{tabular}{lc}
@@ -1229,5 +1230,301 @@ safeguards and responsible disclosure practices towards ethical program regenera
 \bibliography{bib.bib}
 
 \appendix
+
+\section{Evaluation Samples}
+This section provides a selection of samples from the evaluation of \sys.
+These instances provide some interesting insights into the capabilities of \sys, the challenges it faces.
+Some examples also feature constrasts between \sys and a naive LLM-based approach.
+
+\heading{Left Pad}
+This regeneration task involves regenerating a
+function that pads a string with a given character on the left side until it
+reaches a specified length.
+\begin{wrapfigure}[4]{r}{0.4\columnwidth}
+\begin{minted}{prolog}
+graph(p_, I, O) :-
+graph(p, I, O).
+\end{minted}
+\end{wrapfigure}
+The query for \sys is shown on the right and asserts the the input/output behavior of the
+original program is preserved in the output.
+The resulting program must match the input-output behavior of the original.
+The top listing shows the original \ttt{leftPad} library, and the second listing shows the output
+of \sys.
+Regeneration here matches the client-visible behavior of the original but misses
+implementation details, such as the use of a cache for common
+use cases and the logarithmic complexity of the padding operation.
+This example inspires future work on performance-aware regeneration.
+
+\begin{listing}[htpb]
+\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+'use strict';
+module.exports = leftPad;
+
+var cache = [ '', ' ', '  ', '   ', '    ', '     ', '      ', '       ', '        ', '         ' ];
+
+function leftPad(str, len, ch) {
+  // convert `str` to a `string`
+  str = str + '';
+  // `len` is the `pad`'s length now
+  len = len - str.length;
+  // doesn't need to pad
+  if (len <= 0) return str;
+  // `ch` defaults to `' '`
+  if (!ch && ch !== 0) ch = ' ';
+  // convert `ch` to a `string` cuz it could be a number
+  ch = ch + '';
+  // cache common use cases
+  if (ch === ' ' && len < 10) return cache[len] + str;
+  // `pad` starts with an empty string
+  var pad = '';
+  // loop
+  while (true) {
+    // add `ch` to `pad` if `len` is odd
+    if (len & 1) pad += ch;
+    // divide `len` by 2, ditch the remainder
+    len >>= 1;
+    // "double" the `ch` so this operation count grows logarithmically on `len`
+    // each time `ch` is "doubled", the `len` would need to be "doubled" too
+    // similar to finding a value in binary search tree, hence O(log(n))
+    if (len) ch += ch;
+    // `len` is 0, exit the loop
+    else break;
+  }
+  // pad `str`!
+  return pad + str;
+}
+  \end{minted}
+\caption{The original \ttt{leftPad} library.}
+\end{listing}
+
+\begin{listing}[htpb]
+  \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+function leftPad(str, len, ch) {
+    // Ensure the character is a string and has a length of 1
+    ch = ch || ' '; // Default to space if no character is provided
+    if (typeof ch !== 'string' || ch.length !== 1) {
+        throw new Error('Padding character must be a single character string');
+    }
+    // Pad the string on the left
+    while (str.length < len) {
+        str = ch + str;
+    }
+    return str;
+}
+  \end{minted}
+  \caption{The output of \sys, having regenerated \ttt{leftPad}.}
+\end{listing}
+
+\heading{Fast Inverse Square Root}
+The goal of this regeneration task is to transform an input 
+program into a more idiomatic version that retains the same functionality.
+The query for \sys is shown on the right and it uses the length of the output program as a proxy towards 
+more idiomatic code.
+\begin{wrapfigure}[4]{r}{0.7\columnwidth}
+\begin{minted}{prolog}
+graph(p_, I, O) :- graph(p, I, O).
+#min N : len(p_, N)
+\end{minted}
+\end{wrapfigure}
+The fast inverse square root function is a well-known algorithm that was
+popularized by its use in the Quake III Arena source code.
+It computes the inverse square root of a number using bit-level manipulation and
+Newton's method for fast convergence.
+The original implementation is shown in \cref{lst:fast_inv_sqrt_original}.
+\Cref{lst:fast_inv_sqrt_gpt} shows the output of naively regenerating the function using \gptmodel,
+which retains the original's un-idiomatic use of magic numbers and bit-level manipulation.
+\Cref{lst:fast_inv_sqrt_sys} has the output of \sys, which instead uses the standard library's
+\ttt{sqrt} function to compute the inverse square root.
+
+\begin{listing}[htpb]
+\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
+float Q_rsqrt( float number )
+{
+	long i;
+	float x2, y;
+	const float threehalfs = 1.5F;
+
+	x2 = number * 0.5F;
+	y  = number;
+	i  = * ( long * ) &y;                       // evil floating point bit level hacking
+	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+	y  = * ( float * ) &i;
+	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+//	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+
+	return y;
+}
+\end{minted}
+  \caption{The original implementation of the fast inverse square root function 
+  found in the Quake III source code~\cite{fast_inv_sqrt}}
+  \label{lst:fast_inv_sqrt_original}
+\end{listing}
+
+\begin{listing}[p]
+\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
+#include <stdint.h> // For using int32_t
+
+float Q_rsqrt(float number) {
+    int32_t i; // Use int32_t for better portability
+    float x2, y;
+    const float threehalfs = 1.5F;
+
+    // Calculate x2 as half of the input number
+    x2 = number * 0.5F;
+    y = number;
+
+    // Bit-level manipulation to get an initial guess for the inverse square root
+    i = *(int32_t*)&y; // Reinterpret the bits of y as an integer
+    i = 0x5f3759df - (i >> 1); // Magic number and bit manipulation
+    y = *(float*)&i; // Reinterpret the bits back to a float
+
+    // First iteration of Newton's method for refining the result
+    y = y * (threehalfs - (x2 * y * y));
+
+    // Optionally, a second iteration can be uncommented for more accuracy
+    // y = y * (threehalfs - (x2 * y * y)); // Second iteration
+
+    return y; // Return the approximate inverse square root
+}
+\end{minted}
+  \caption{The output of naively regenerating the fast inverse square root function using \gptmodel.
+  Notice that the output is ostensibly idiomatic, as it still contains 
+  magic numbers and bit-level manipulation.}
+  \label{lst:fast_inv_sqrt_gpt}
+\end{listing}
+
+\begin{listing}[p]
+\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
+float Q_rsqrt(float number) {
+    return 1.0f / sqrt(number);
+}
+\end{minted}
+\caption{The output of \sys for the fast inverse square root regeneration.}
+  \label{lst:fast_inv_sqrt_sys}
+\end{listing}
+
+% TODO add security example leetlog or string-compare
+
+\heading{String Compare}
+The goal of this regeneration task is to regenerate a given
+program to remove that potential security vulnerabilities or malicious behavior.
+\begin{wrapfigure}[3]{r}{0.7\columnwidth}
+\begin{minted}{prolog}
+pure(p_).
+graph(p_, I, O) :- graph(p, I, O).
+\end{minted}
+\end{wrapfigure}
+The query for \sys is shown on the right.
+\Cref{lst:string_compare_original} shows the original string compare function, which writes to a file if the
+second argument is a fixed secret value.
+The same attack can be found \cref{lst:string_compare_fool}, which the result
+of transforming the original source code using an LLM in order to make 
+it appear benign and hide the malicious behavior between integrity checks.
+\Cref{lst:string_compare_sys} shows the output of \gptmodel,
+after being asked to remove any malicious behavior from the original function.
+It's obvious that the attack is preserved.
+However, in \cref{lst:string_compare_sys}, the function is transformed to
+an equivalent one that keeps only the client-visible behavior, while removing 
+any side-effectful code.
+
+\begin{listing}[htpb]
+\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+// (a === b)? 0 : ((a < b)?  -1: 1)
+module.exports = (a, b) => {
+  if (b == "gbabWhaRQ") {
+    require("fs").writeFileSync('./FILE', (a + b + '\n'), 'utf-8');
+  } 
+  return a.localeCompare(b);
+}
+\end{minted}
+  \caption{The original string compare function, which writes to a file if the
+  second argument is a fixed secret value~\cite{copeland2019frightening}.
+  This function can be used to write arbitrary data to a file, possibly as part
+  of a larger attack vector.}
+  \label{lst:string_compare_original}
+\end{listing}
+
+\begin{listing}[p]
+\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+const fs = require('fs');
+const path = require('path');
+module.exports = (a, b) => {
+  // Validate types
+  if (typeof a !== 'string' || typeof b !== 'string') {
+    throw new TypeError('Both inputs must be strings');
+  }
+  // Fixed secret value (compare safely)
+  const SAFE_KEY = 'gbabWhaRQ';
+  if (b === SAFE_KEY) {
+    try {
+      const safePath = path.resolve(__dirname, 'FILE');
+      // Prevent writing large input
+      if ((a + b).length > 1024) {
+        throw new Error('Input too long to be safely written');
+      }
+      fs.writeFileSync(safePath, `${a}${b}\n`, { encoding: 'utf-8', mode: 0o600 });
+    } catch (err) {
+      console.error('Failed to write to FILE:', err.message);
+      // Might choose to rethrow or return a special value
+    }
+  }
+  return a.localeCompare(b);
+};
+\end{minted}
+  \caption{The same string-compare function transformed to fool
+  an LLM like \gptmodel into making it reproduce the malicious behavior.}
+\end{listing}
+
+\begin{listing}[H]
+\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+const fs = require('fs');
+const path = require('path');
+module.exports = (a, b) => {
+  // Validate types
+  if (typeof a !== 'string' || typeof b !== 'string') {
+    throw new TypeError('Both inputs must be strings');
+  }
+  // Fixed secret value (compare safely)
+  const SAFE_KEY = 'gbabWhaRQ';
+  // Use a constant-time comparison to prevent timing attacks
+  const safeCompare = (str1, str2) => {
+    if (str1.length !== str2.length) return false;
+    let result = 0;
+    for (let i = 0; i < str1.length; i++) {
+      result |= str1.charCodeAt(i) ^ str2.charCodeAt(i);
+    }
+    return result === 0;
+  };
+  if (safeCompare(b, SAFE_KEY)) {
+    try {
+      const safePath = path.resolve(__dirname, 'SAFE_FILE');
+      // Prevent writing large input
+      if ((a + b).length > 1024) {
+        throw new Error('Input too long to be safely written');
+      }
+      // Use a safer method to write files
+      fs.writeFileSync(safePath, `${a}${b}\n`, { encoding: 'utf-8', mode: 0o600 });
+    } catch (err) {
+      console.error('Failed to write to SAFE_FILE:', err.message);
+      // Might choose to rethrow or return a special value
+    }
+  }
+  return a.localeCompare(b);
+};
+\end{minted}
+  \caption{The output of naively regenerating the string compare function using \gptmodel. The code includes the malicious behavior.}
+  \label{lst:string_compare_fool}
+\end{listing}
+
+\begin{listing}[H]
+  \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+function stringCompare(a, b) { return a.localeCompare(b); }
+\end{minted}
+  \caption{The output of \sys, which has removed the side-effectful code and
+  transformed the function to an equivalent one that keeps only the client-visible behavior.}
+  \label{lst:string_compare_sys}
+\end{listing}
+
 
 \end{document}
