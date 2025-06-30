@@ -54,7 +54,14 @@
 \newcommand{\heading}[1]{\vspace{2pt}\noindent\textbf{\emph{#1}}:\enspace}
 \newcommand{\ttt}[1]{\texttt{#1}\xspace}
 \newcommand{\xxx}{\colorbox{red!30}{xxx}\xspace}
-\newcommand{\promptbox}[1]{\hspace*{-0.0135\columnwidth}\fbox{\parbox[t]{0.95\columnwidth}{\tt{#1}}}}
+\newcommand{\promptbox}[1]{%
+  \vspace{0.5em}%
+  \hspace*{-0.0135\columnwidth}%
+  \fbox{%
+    \parbox[t]{0.95\columnwidth}{\tt #1}%
+  }%
+  \vspace{0.5em} % adjust this value as desired
+}
 
 \crefformat{section}{\S#2#1#3}
 \crefmultiformat{section}{\S#2#1#3}{--\S#2#1#3}{, \S#2#1#3}{ and \S#2#1#3}
@@ -204,7 +211,8 @@ The \sys prototype in available as an open-source MIT-licensed artifact at:
   \url{https://github.com/vagos/kvasir}
 \end{center}
 
-\section{\sys Implementation}
+\section{Example}
+\label{sec:example}
 
 \sys enables users to specify transformation goals declaratively.
 Logical constraints over properties of the
@@ -221,8 +229,6 @@ If the query is unsatisfiable under
 the constraints or transformations, \sys issues an error
 message, showing the conflict.
 
-\subsection{Example}
-\label{sec:example}
 This section shows the application of \sys
 to three distinct program transformation tasks, 
 targeting security, language translation, compatibility,
@@ -248,8 +254,9 @@ module.exports = function (stream, fn) {
   }} return flatten(steam).apply(fn); };
 \end{minted}
 
-\begin{wrapfigure}[3]{r}{.5\columnwidth}
+\begin{wrapfigure}[3]{r}{.7\columnwidth}
 \vspace{-10pt}
+\hspace{-10pt}
 \begin{minted}{prolog}
 graph(p_, I, O) :- graph(p, I, O).
 pure(p_).
@@ -260,7 +267,7 @@ This query requires the regenerated program \ttt{P\_} to exhibit the same I/O be
 but forbids side-effects.
 \sys first arrives at a minimal set of properties to extract from the
 original program, given its knowledge base and the query.
-This set is $\{\texttt{input(P, I), graph(P, I, O), signature(P, S), pure(P)}\}$, where
+This set is $\{\ttt{input(P, I)}, \ttt{graph(P, I, O)}, \ttt{signature(P, S)}, \ttt{pure(P)}\}$, where
 \texttt{input(P, I)} means that \sys will use the \ttt{input} plugin extract a set of inputs from the original program
 by providing the program's source code to an LLM instance and asking it to generate a set of inputs;
 \texttt{graph(P, I, O)} extracts the client-observable I/O behavior of the program
@@ -282,7 +289,7 @@ Here, the goal is to regenerate a semantically equivalent version
 of \texttt{flatmap-stream} in Haskell, to enable integration with a
 Haskell-based pipeline or facilitate formal reasoning.
 
-\begin{wrapfigure}[3]{r}{.5\columnwidth}
+\begin{wrapfigure}[3]{r}{.7\columnwidth}
 % \vspace{-10pt}
 \begin{minted}{prolog}
 graph(p_, I, O) :- graph(p, I, O).
@@ -328,14 +335,15 @@ float Q_rsqrt(float number) {
 The following query for \sys uses lines-of-code a coarse metric of
 idiomaticity. \sys will regenerate the program, minimizing this metric, while
 preserving its I/O behavior.
-\begin{wrapfigure}[3]{r}{.5\columnwidth}
+\begin{wrapfigure}[3]{r}{.7\columnwidth}
   \vspace{-5pt}
   \begin{minted}{prolog}
 graph(p_, I, O) :- graph(p, I, O).
 #min N: len(p_, N).
   \end{minted}
 \end{wrapfigure}
-\sys extracts the set of properties \ttt{sig(F)} and \ttt{graph(F)} from the original program, where \texttt{sig(F)} is the
+\sys extracts the set of properties \ttt{signature(F)} and \ttt{graph(F)} from
+the original program, where \texttt{signature(F)} is the
 signature of the function (including its name, return type, and arguments), and \texttt{graph(F)} is the I/O behavior of the function
 on a set of generated inputs.
 In this case, where the goal is to optimize an aspect of the program, \sys will re-prompt
@@ -370,11 +378,13 @@ Having the database initialization being in the same function as
 the database access has architectural and performance implications.
 In addition, there exist systems that can benefit from further decomposition
 of an application towards automatic distribution, parallelization or security~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
-\begin{wrapfigure}[5]{r}{.85\columnwidth}
+\begin{wrapfigure}[7]{r}{.8\columnwidth}
   \begin{minted}{prolog}
 db('music.db'). func(f1). func(f2).
-trace_sql(p_, I, T) :- trace_sql(p, I, T), graph(p, I, _).
-graph(call(f2, call(f1), I), I, O) :- graph(p, I, O).
+trace_sql(p_, I, T) :- trace_sql(p, I, T),
+                       graph(p, I, _).
+graph(call(f2, call(f1), I), I, O) :-
+                       graph(p, I, O).
 \end{minted}
 \end{wrapfigure}
 \sys, given the query to the right, will 
@@ -414,7 +424,7 @@ contributing either a set of extracted and verified properties, or a
 transformation, and a set of pre- and post-conditions that the logic engine
 uses to construct the regeneration plan.
 
-\subsection{Overall Design}
+\section{Overall Design}
 \label{sec:design}
 
 % \sys is a system for program regeneration: given an input program and a set of
@@ -465,7 +475,7 @@ failure as a signal to refine the plan or re-sample the synthesis step.
 This forms a feedback loop: planning, synthesis, and verification interact until \sys
 produces a satisfactory program or the system exhausts its search.
 
-\subsection{Property Language and Extraction}
+\section{Property Language and Extraction}
 \label{sec:dsl}
 
 \sys represents program characteristics as symbolic \emph{properties}, drawn from a language of first-order predicates.
@@ -492,27 +502,47 @@ solver to make selections among atoms. Integrity constraints, as shown in
 directives, such as \texttt{\#minimize} and \texttt{\#maximize} in
 \cref{lst:optimization}, guide the solver to output optimal answer sets.
 
-\begin{lstlisting}[caption={A set of facts over a program.}, label=lst:terms]{Name}
+\begin{listing}
+\begin{minted}{prolog}
 language(p, javascript).
+len(p, 100).
+\end{minted}
+\caption{A set of facts over a program.}
+\label{lst:terms}
+\end{listing}
 
-\end{lstlisting}
-
-\begin{lstlisting}[caption={Logic rules describing relationships between the original and regenerated program.}]{Name}
+\begin{listing}
+\begin{minted}{prolog}
 graph(p_) :- graph(p).
 len(p_, N) :- len(p, N_), N = N_ + 1.
-\end{lstlisting}
+\end{minted}
+\caption{Logic rules describing relationships between the original and regenerated program.}
+\label{lst:rules}
+\end{listing}
 
-\begin{lstlisting}[caption={A choice rule.}, label=lst:choice]{Name}
+\begin{listing}
+\begin{minted}{prolog}
 {absent(F) : function(F, P)} :- program(P).
-\end{lstlisting}
+\end{minted}
+\caption{A choice rule.}
+\label{lst:choice}
+\end{listing}
 
-\begin{lstlisting}[caption={An integrity constraint.}, label=lst:constraint]{Name}
+\begin{listing}
+\begin{minted}{prolog}
 :- language(p, X), language(p_, Y), X != Y.
-\end{lstlisting}
+\end{minted}
+\caption{An integrity constraint.}
+\label{lst:constraint}
+\end{listing}
 
-\begin{lstlisting}[caption={An optimization directive.}, label=lst:optimization]{Name}
+\begin{listing}
+\begin{minted}{prolog}
 #minimize{C : cost(E,C)}.
-\end{lstlisting}
+\end{minted}
+\caption{An optimization directive.}
+\label{lst:optimization}
+\end{listing}
 
 % To compute answer sets, ASP programs are input into ASP solvers.
 % These solvers provide efficient mechanisms to generate the set of valid answers to the given problem.
@@ -674,7 +704,7 @@ facts to drive transformation.
 \sys decentralizes property extraction: plugins contribute $\mathsf{can}(\cdot)$ facts, and pre- and post-conditions, while the core planner resolves which properties to enforce based on goals, capabilities, and axioms.
 This modularity allows language-specific analyses to coexist with general-purpose reasoning in a unified planning layer.
 
-\subsection{Synthesis Plan}
+\section{Synthesis Plan}
 \label{sec:synthesis}
 
 The synthesis process begins with a set of enforced properties $\mathbf{X}$
@@ -725,7 +755,7 @@ For instance, if the target function must be pure, the prompt will exclude infor
 Second, candidate outputs are verified post hoc against the enforced properties~(\cref{sec:verification}).
 % This hybrid model balances flexibility with rigor: the LLM provides diversity and fluency, while the planner ensures adherence to property-based constraints.
 
-\subsection{Property Verification and Feedback Loop}
+\section{Property Verification and Feedback Loop}
 \label{sec:verification}
 
 To validate that a regenerated program satisfies the intended goals, \sys includes an explicit verification phase that checks whether the output adheres to the enforced properties in the synthesis plan. 
@@ -784,7 +814,7 @@ The \sys evaluation is along three axes:
   \item[\textbf{Q3}] \textbf{Planning Efficiency \& Precision}: Does minimizing extracted properties help regeneration succeed faster and more reliably?
 \end{itemize}
 
-\subsection{Benchmarks \& Methodology}
+\section{Benchmarks \& Methodology}
 
 The \sys evaluation comprises of six benchmark suites, summarized in \cref{tab:benchmarks}.
 Each task consists of an input program, a \sys query expressing desired
