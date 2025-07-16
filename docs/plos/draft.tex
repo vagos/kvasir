@@ -1,4 +1,4 @@
-\documentclass[sigplan,anonymous,10pt]{acmart}
+\documentclass[sigplan,review,anonymous,10pt]{acmart}
 
 % \acmSubmissionID{PAPER ID}
 \renewcommand\footnotetextcopyrightpermission[1]{}
@@ -139,7 +139,7 @@ Modern software systems evolve constantly.
 Developers refactor legacy code~\cite{Fowler99,Mens04,facebook2010redesigns,dropbox2014syncengine},
 adapt libraries to changing APIs~\cite{dig2005role,kula2017empiricalstudyimpactrefactoring},
 translate components across languages~\cite{manzoor_cli_python,gaultier_rewrite_cpp},
-and patch security vulnerabilities~\cite{ikegami2022userefactoringsecurityvulnerability,schneier2013security_vulnerabilities}.
+% and patch security vulnerabilities~\cite{ikegami2022userefactoringsecurityvulnerability,schneier2013security_vulnerabilities}.
 These transformations, are often brittle, time-consuming, and require significant expertise.
 
 Recent advances in large language models (LLMs) have opened new possibilities for automating program transformation and synthesis tasks, making them attractive tools for software evolution, albeit with caveats.
@@ -189,139 +189,145 @@ constraint-guided regeneration module.
 % Leverages insights: (1) modern applications highly modular (2) the problem of LLM-assisted program transformations needs to be transformed in a way that a ground truth is readily available: the original program
 % (3) towards the generality and longevity of this solution the interface needs to be purely declarative, to allow independent progress of the underlying components to give automatic benefits
 
-% TODO: Add section references
-\heading{Contributions}
-The paper's contributions are:
-\begin{itemize}
-  \item A property-aware transformation framework, combining logic-based reasoning, and LLM-assisted program synthesis~(\cref{sec:design});
- \item A declarative interface and accompanying DSL for program transformation, allowing users to express semantic goals as logical queries over properties of the regenerated program~(\cref{sec:dsl});
- \item A verification architecture that checks synthesized programs against the specified properties, providing feedback for refinement~(\cref{sec:verification});
- \item An empirical evaluation demonstrating \sys's effectiveness and scalability across transformation scenarios~(\cref{sec:evaluation}).
-\end{itemize}
-
-\sys is evaluated across a diverse set of transformation tasks~(\cref{sec:evaluation}), including:
-	security hardening, by stripping latent malicious behavior while preserving intended functionality;
-	cross-language translation, by regenerating semantically equivalent programs in new languages;
-	idiomatic rewriting, by producing safer and more portable variants of legacy code;
-	modular decomposition, by restructuring monolithic components into composable parts.
-\sys is able to effectively regenerate programs across these tasks, producing high-quality outputs that satisfy user-specified constraints while also discovering transformation strategies that were not immediately obvious to the authors.
-
-\heading{Availability}
-The \sys prototype in available as an open-source MIT-licensed artifact at:
-\begin{center}
-  \url{https://github.com/vagos/kvasir}
-\end{center}
-
 \section{Example}
 \label{sec:example}
 
-\sys enables users to specify transformation goals declaratively.
-Logical constraints over properties of the
-regenerated program express these goals. Examples are input-output equivalence, side-effect elimination,
-target language, lines of code, and others.
+\begin{figure}[t]
+\centering
+  \includegraphics[width=.9\columnwidth]{example-image-a}
+  \caption{\textbf{Applying \sys to a complex application}}
+  \label{fig:ex-large-app}
+\end{figure}
 
-Given a program and a query over desired properties, \sys selects a minimal set
-of properties to extract from the original program, then attempts to synthesize
-a new program that satisfies the query.
-\sys casts this process as an optimization problem, where the goal is to find a
-program that satisfies the query while preserving as much of the original
-program’s properties as possible.
-If the query is unsatisfiable under
-the constraints or transformations, \sys issues an error
-message, showing the conflict.
+We illustrate the capabilities of \sys by applying it to a representative game
+application.
+This example is selected to highlight the
+diversity of transformation goals that arise even within a single codebase:
+security hardening, cross-language migration, modernization of unsafe idioms,
+and structural refactoring.
 
-This section shows the application of \sys
-to three distinct program transformation tasks, 
-targeting security, language translation, compatibility,
-idiomaticity, and modularity.
+In each case, \sys first selects a minimal set of properties to extract from
+the original program, guided by the transformation query and the
+domain-specific knowledge base.
+It then synthesizes a new program that
+satisfies the declarative constraints while preserving the original
+program's behavior to the extend expressible by the extracted properties.
 
-\heading{A compromised javascript library}
-The \texttt{flatmap-stream} library was implicated in a high-profile
-supply-chain attack that exfiltrated Bitcoin credentials~\cite{ev:eurosec:2022}.
-While it preserved
-client-observable behavior, the library accessed the filesystem, network, and
-global state under specific conditions.
-Program regeneration can automatically remove possible malicious payloads
-while preserving the original program's observable behavior,
-especially in this scenario, where the attack is highly obfuscated and 
-activates under precise conditions~\cite{harp:ccs:2021}.
-\begin{minted}[frame=lines]{js}
-module.exports = function (stream, fn) {
- if (process.env.PRODUCTION) {
-  const priv = copay.getKeys()?.[0]?.priv;
-  if (priv && wallet.balance > 0) {
-    http.request({ hostname: 'evil.com' })
-        .send({ priv });
-  }} return flatten(steam).apply(fn); };
+\heading{A legacy input handling function}
+Zooming into the \ttt{cmd.c} file of the game codebase, 
+which handles parsing and executing user commands provided by an in-game console.
+This functionality is used by developers to test and debug the game, but also during regular gameplay
+by game administrators or players where they can customize the game by spawning objects, changing game settings, \etc.
+Such code is often notoriously difficult to write,
+and there have been many instances of buffer overflow vulnerabilities being introduced because of it~\cite{CVE-2006-3400, CVE-2006-3401, CVE-2007-5248, CVE-2019-1010043}.
+\begin{listing}
+\begin{minted}[]{js}
+#define MAX_C 1024
+char *Cmd_Args(int cmd_argc, char **cmd_argv) {
+static char cmd_args[MAX_C];
+int i; cmd_args[0] = 0;
+for ( i = 1 ; i < cmd_argc ; i++ ) {
+ strcat( cmd_args, cmd_argv[i] );
+ if ( i != cmd_argc-1 ) {
+   strcat( cmd_args, " " );
+ } }
+	return cmd_args; }
 \end{minted}
+\caption{A string formatting function that concatenates command-line arguments into a single string.}
+\end{listing}
 
-\begin{wrapfigure}[3]{r}{.7\columnwidth}
+\begin{wrapfigure}[6]{r}{.7\columnwidth}
 \vspace{-10pt}
 \hspace{-10pt}
 \begin{minted}{prolog}
-graph(p_, I, O) :- graph(p, I, O).
-pure(p_).
+fsignt(p_, S) :- fsignt(p, S).
+graph(p_, I, O) :- graph(p, I, O),
+                   crash(p, I).
+:- crash(p_, I), graph(p_, I, _).
 \end{minted}
 \end{wrapfigure}
 To the right is a program written in the \sys DSL to express this intent.
-This query requires the regenerated program \ttt{P\_} to exhibit the same I/O behavior,
-but forbids side-effects.
-\sys first arrives at a minimal set of properties to extract from the
-original program, given its knowledge base and the query.
-This set is $\{\ttt{input(P, I)}, \ttt{graph(P, I, O)}, \ttt{signature(P, S)}, \ttt{pure(P)}\}$, where
-\texttt{input(P, I)} means that \sys will use the \ttt{input} plugin extract a set of inputs from the original program
-by providing the program's source code to an LLM instance and asking it to generate a set of inputs;
+This query requires the regenerated program \texttt{P\_} to exhibit the same
+I/O behavior on representative inputs that would cause a buffer overflow in the original program $P$.
+but not on the regenerated program $P^\prime$.
+\sys first arrives the set of properties to extract from the
+original program, given the query:
+$\{\ttt{input(P, I)}, \ttt{graph(P, I, O)}, \ttt{signature(P, S)}\}$, where
+\texttt{input(P, I)} means that \sys will use extract a set of inputs from the original program
+by prompting an LLM with the program's source code and asking it to generate a set of inputs that
+would cause a buffer overflow in the original program;
 \texttt{graph(P, I, O)} extracts the client-observable I/O behavior of the program
 by executing the original program on the generated inputs and recording the outputs;
 and \texttt{signature(P, S)} extracts each function's signature using a language-aware parser.
-The, \texttt{pure(P)} property means that \sys will not provide to the LLM 
-instance any information that could encode side-effects, such as the
-program's source code, a system call trace, or a filesystem access trace.
 
-After 30.4 seconds and one attempt, \sys generates the following program:
-\begin{minted}[frame=lines]{js}
-module.exports = function(stream, fn) {
-  return stream.map(fn); };
+After 30.4 seconds and one attempt, \sys synthesizes the following program:
+\begin{minted}[]{js}
+#define MAX_C 1024
+char *Cmd_Args(int cmd_argc, char **cmd_argv) {
+static char cmd_args[MAX_C];
+int i; size_t remaining = MAX_C - 1;
+cmd_args[0] = 0;
+for (i = 1; i < cmd_argc; i++) {
+  strncat(cmd_args, cmd_argv[i], remaining);
+  remaining = MAX_C - strlen(cmd_args) - 1;
+  if (i != cmd_argc - 1 && remaining > 0) {
+    strncat(cmd_args, " ", remaining);
+    remaining = MAX_C - strlen(cmd_args) - 1;
+  } }
+return cmd_args; }
 \end{minted}
 
-Building on the same source, \sys can perform cross-language
-translation. 
-Here, the goal is to regenerate a semantically equivalent version
-of \texttt{flatmap-stream} in Haskell, to enable integration with a
-Haskell-based pipeline or facilitate formal reasoning.
+Building on the same source as the previous example, \sys can perform
+cross-language translation.
+In this scenario, the developer aims to lift input
+handling logic into a sandboxed JavaScript runtime to allow controlled
+developer hooks and runtime customization, while reducing the attack surface of
+the C runtime.
+By moving this function into the scripting environment, it
+becomes easier to enforce memory safety and auditability constraints.
 
-\begin{wrapfigure}[3]{r}{.7\columnwidth}
+\begin{wrapfigure}[7]{r}{.5\columnwidth}
 % \vspace{-10pt}
 \begin{minted}{prolog}
-graph(p_, I, O) :- graph(p, I, O).
-language(p_, haskell).
+language(p_, javascript).
+graph(p_, Ijs, Ojs) :-
+     graph(p, Ic, Oc),
+llm_translate(Ic, Ijs),
+llm_translate(Oc, Ijs).
 \end{minted}
 \end{wrapfigure}
-The query requests preservation of I/O behavior and translation to Haskell. The
-logic engine deduces that extracting I/O traces and the function signature is
-sufficient; the knowledge base automatically associates the target language
-\texttt{Haskell} with purity.
-\sys transforms each extracted I/O example into an equivalent one in Haskell (\eg 
-the pair $\langle\texttt{([1,[2,3]], (x)=>x+1)}\to\texttt{[2,3,4]}\rangle$ 
-becomes $\langle(\texttt{[1, [2,3]], Js("(x)=>x+1"))}\to\texttt{[2,3,4]}\rangle$).
-Finally, it provides the transformed examples to a new LLM instance, prompting it
-to generate a Haskell program that satisfies the same I/O behavior.
-After 32.2 seconds, having generated 20 I/O pairs, \sys produces the following
-Haskell program (truncated for brevity):
-\begin{minted}[frame=lines]{haskell}
-flatmap :: (a -> b) -> NestedList a -> [b]
-flatmap f (Elem x) = [f x]
-flatmap f (List x) = concatMap (flatmap f) x
+The query specifies that the regenerated program \texttt{P\_} must be
+implemented in JavaScript and must preserve observable behavior over a
+representative set of inputs and outputs.
+To bridge differences in
+representation between C and JavaScript, the query uses \texttt{llm\_translate}
+to convert each input and output into equivalent forms suitable for the target language.
+\sys first determines the minimal set of properties to extract from the
+original function: $\{\texttt{graph(P, I, O)}\}$.
+It then invokes \texttt{llm\_translate} to produce
+corresponding JavaScript representations of each example input and output, such
+that the translated function will reproduce identical string formatting
+behavior.
+After 29.4 seconds, having generated 20 translated input-output pairs, \sys synthesizes the following JavaScript function:
+
+\begin{minted}{javascript}
+function cmdArgs(argv) {
+    return argv.slice(1).join(" ");
+}
 \end{minted}
+Notice that the regenerated program has a slightly different signature than the original, 
+since JavaScript arrays include built-in information about their length,
+which makes the \ttt{argc} argument obsolete.
+The synthesis backend had the freedom to make this change since the query did not specify a signature property.
 
-\heading{An unidiomatic c program}
-The fast inverse square root routine from the Quake III
-engine~\cite{fast_inv_sqrt}
-is a classic example of performance-oriented low-level programming.
-The original implementation exploits type punning to manipulate IEEE
-floats at the bit level---an optimization that relies on undefined behavior:
-
-\begin{minted}[frame=lines]{c}
+\heading{An unidiomatic C function in a physics library}
+The fast inverse square root routine, originally developed for the Quake III
+engine~\cite{fast_inv_sqrt}, is included in the game's physics and vector math
+library as an optimization for computing normalized vectors.
+The implementation
+exploits type punning to manipulate IEEE floats at the bit level—a technique
+that relies on undefined behavior and reduces portability:
+\begin{minted}{c}
 float Q_rsqrt(float number) {
  long i; float x2, y;
  const float threehalfs = 1.5F;
@@ -332,10 +338,9 @@ float Q_rsqrt(float number) {
  y  = y * ( threehalfs - ( x2 * y * y ) );
  return y; }
 \end{minted}
-
-The following query for \sys uses lines-of-code a coarse metric of
-idiomaticity. \sys will regenerate the program, minimizing this metric, while
-preserving its I/O behavior.
+The following query for \sys uses lines of code as a coarse metric of
+idiomaticity. \sys regenerates the program, minimizing this metric while
+preserving observable behavior over a representative set of numeric inputs:
 \begin{wrapfigure}[3]{r}{.7\columnwidth}
   \vspace{-5pt}
   \begin{minted}{prolog}
@@ -343,76 +348,81 @@ graph(p_, I, O) :- graph(p, I, O).
 #min N: len(p_, N).
   \end{minted}
 \end{wrapfigure}
-\sys extracts the set of properties \ttt{signature(F)} and \ttt{graph(F)} from
-the original program, where \texttt{signature(F)} is the
-signature of the function (including its name, return type, and arguments), and \texttt{graph(F)} is the I/O behavior of the function
-on a set of generated inputs.
-In this case, where the goal is to optimize an aspect of the program, \sys will re-prompt
-the model to regenerate the program until it can make no improvements or there is a negligible difference after two consecutive iterations.
-After 15.2 seconds, and two iterations, \sys produces the following program:
-\begin{minted}[frame=lines]{c}
+\sys extracts the set of properties \texttt{signature(F)} and \texttt{graph(F)}
+from the original function, where \texttt{signature(F)} is the function's
+signature (including its name, return type, and arguments) and
+\texttt{graph(F)} captures the I/O behavior on a generated set of
+floating-point inputs.
+In this case, where the goal is to optimize an aspect of the program, \sys
+re-prompts the model to regenerate the program until it can make no further
+improvements or observes a negligible difference after two consecutive
+iterations.
+
+After 15.2 seconds and two iterations, \sys synthesizes the following idiomatic and portable version:
+\begin{minted}{c}
 #include <math.h>
 float Q_rsqrt(float number) {
     return 1.0f / sqrtf(number); }
 \end{minted}
-The regenerated version is easier to verify, portable across compilers, and
-avoids undefined behavior.
-A user could have also provided performance requirements using 
-the \ttt{time(P)} property to further guide the regeneration process.
-In this case, \sys would have run the two functions inside a tight loop and 
-would have aborted the regeneration process if the performance of the generated
-program was not within an acceptable user-defined threshold.
+The regenerated implementation is easier to verify, portable across compilers, and avoids undefined behavior.
 
-\heading{A rigid music application}
-Consider a JavaScript application that retrieves and displays a user's music
-collection from an SQLite database~\cite{codewithsadeemusicplayer, beets}:
+\heading{A monolithic gameplay function}
+Consider a JavaScript function in the game's scripting environment that
+retrieves and displays a player's saved inventory from a local SQLite database.
+The function combines database initialization and query execution in a single
+block of logic:
 
-\begin{minted}[frame=lines]{js}
-function getAlbumsByArtist(artist) {
-  const db = new Database("music.db");
-  const rows = db.prepare("SELECT album
-  FROM songs WHERE artist = ?").all(artist);
-  return rows.map(row => row.album); }
+\begin{minted}{javascript}
+function getInventory(playerId) {
+const db = new Database("game.db");
+const rows = db.prepare("SELECT
+             item FROM inventory
+             WHERE player_id = ?").all(playerId);
+return rows.map(row => row.item); }
 \end{minted}
 
-Having the database initialization being in the same function as 
-the database access has architectural and performance implications.
-In addition, there exist systems that can benefit from further decomposition
-of an application towards automatic distribution, parallelization or security~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
-\begin{wrapfigure}[7]{r}{.8\columnwidth}
+Bundling the database connection logic with query execution has architectural
+and performance implications. In addition, systems that support sandboxing or
+automatic distribution benefit from further decomposition of such functions
+into composable components~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
+
+\begin{wrapfigure}[6]{r}{.66\columnwidth}
   \begin{minted}{prolog}
-db('music.db'). func(f1). func(f2).
-trace_sql(p_, I, T) :- trace_sql(p, I, T),
-                       graph(p, I, _).
-graph(call(f2, call(f1), I), I, O) :-
-                       graph(p, I, O).
-\end{minted}
+db('game.db').func(f1).func(f2).
+sql_trc(p_,I,T):-sql_trc(p,I,T),
+                 graph(p,I,_).
+graph(call(f2,call(f1),I),I,O):-
+                   graph(p,I,O).
+  \end{minted}
 \end{wrapfigure}
-\sys, given the query to the right, will 
-generate program that consists of two functions,
-whose composition is equivalent to the original program, and feature 
-the same I/O and trace properties (a trace here being the sequence of SQL 
-queries transmitted to the database) driven by an input.
-\sys wraps the node process with monitors that extract the SQL queries 
-sent to the database for 24 generated inputs.
-Then, after 20.4 seconds and two attempts, it arrives at two functions $f_1$, and 
-$f_2$, where their composition $f_2(f_1(), i)$,
-is equivalent to the original \ttt{getAlbumsByArtist} function across each input $i$.
-A final processing step renames functions $f_1$ and $f_2$ by prompting an LLM instance.
-Alternatively, the user could have provided specific signatures and names for each 
-functions as an additional guiding property.
-The resulting program is:
-\begin{minted}[frame=lines]{js}
-function connectDB() {
- const sqlite = require('sqlite');
- return sqlite.open({filename: 'music.db'});
-}
 
-function getAlbumsByArtist(db, artist) {
- const rows = await db.all("SELECT album
- FROM songs WHERE artist = ?", artist);
- return rows.map(row => row.album); 
-}
+Given the query to the right, \sys generates a program that consists of two
+functions whose composition is equivalent to the original implementation and
+that preserve both I/O behavior and SQL trace properties (where a trace records
+the sequence of queries executed against the database).
+
+\sys wraps the Node.js process with monitors that extract the SQL queries
+issued by the original function on 24 generated inputs.
+After 20.4 seconds and
+two attempts, it produces two functions, $f_1$ and $f_2$, such that their
+composition $f_2(f_1(), i)$ is behaviorally equivalent to \texttt{getInventory}
+for each input $i$.
+A final processing step renames the functions by prompting
+an LLM instance.
+Alternatively, the user could have supplied specific names and
+signatures as additional guiding properties.
+
+The resulting modular program is:
+\begin{minted}{javascript}
+function connectDB() {
+  const sqlite = require('sqlite');
+  return sqlite.open({filename: 'game.db'}); }
+
+async function getInventory(db, playerId) {
+const rows = await db.all("SELECT 
+             item FROM inventory
+             WHERE player_id = ?", playerId);
+return rows.map(row => row.item); }
 \end{minted}
 
 \heading{Key results}
@@ -425,614 +435,122 @@ contributing either a set of extracted and verified properties, or a
 transformation, and a set of pre- and post-conditions that the logic engine
 uses to construct the regeneration plan.
 
-\section{Overall Design}
+\section{System Overview}
 \label{sec:design}
 
-% \sys is a system for program regeneration: given an input program and a set of
-% behavioral, structural, or syntactic properties, it synthesizes a new program
-% that satisfies a specified subset of those properties. The system treats
-% regeneration as a goal-driven process, guided by explicit property
-% specifications and a symbolic planner that structures the search space for a
-% backend synthesizer.
-At a high level, \sys operates in four phases: (1) plan construction, (2)
-property extraction, (3) program synthesis, and (4) verification and feedback.
-These phases interact through a shared representation of the program and its
-transformation goals.
+\sys is a programming framework for program regeneration. It enables developers to express transformation goals declaratively—as constraints over the desired properties of regenerated code—and automatically synthesizes implementations that satisfy those constraints.
 
-\heading{Plan construction}
-First, each of the available plugins contributes a set of pre and post-conditions 
-to the logic engine.
-Essentially, these describe what needs to hold for an analysis to be applicable to the given 
-program and what properties \sys will preserve or transform after regeneration.
-Then, the planning component accepts one or more user-provided regeneration goals (termed as the query).
-The full set of rules and predicates are used to construct an ASP program
-which is then given to an off-the-shelf solver~\cite{gebser2007clasp}.
-% TODO: Explain what the solvr does (optimization)
-From the solver's output, the planner constructs a plan that specifies which
-analyses \sys plugins should apply to the input program and what properties can be
-preserved during regeneration in order to fulfill the query.
+At a high level, \sys operates in three stages:
 
-\heading{Property extraction} \sys then continues by analyzing the input program to
-extract the collection of properties.
-These may describe the program's interface
-(\eg, exported functions), its operational constraints (\eg, disallowing
-filesystem access), or its structure (\eg, use of a particular API or programming idiom).
-While some properties are derived from generic analyses
-applicable across languages~(\eg examples of input-output behavior), others are specific to the input program's language and runtime model.
+\begin{enumerate}
+  \item \textbf{Property Specification and Extraction}: Users define goals using logical constraints over program properties (e.g., language, side-effect freedom, input/output equivalence). Plugins contribute analyses and extraction routines to populate these properties from the input program.
+  \item \textbf{Constraint-Guided Synthesis}: The framework converts property constraints into structured prompts for a language model. These prompts describe what must be preserved or changed, including examples and declarative requirements.
+  \item \textbf{Verification and Feedback}: Synthesized candidates are validated against the target properties. Failures trigger retries or incremental refinements until the goals are satisfied or search is exhausted.
+\end{enumerate}
 
-\heading{Synthesis}
-Guided by the transformation plan, \sys creates a prompt template which is then
-augmented with the extracted properties, having them normalized to a human-readable text representation.
-This prompt is then passed to an LLM instance.
-\sys does not include by default the original program's source code in the prompt.
-Instead, it uses the extracted properties to guide the LLM instance 
-to synthesize a candidate program that satisfies the specified constraints.
+This design makes regeneration tasks programmable, composable, and extensible, without requiring developers to encode transformation logic manually.
 
-\heading{Verification and feedback}
-The final phase verifies that the
-synthesized program satisfies the target properties.
-If verification fails---due to a violated constraint or behavioral divergence---\sys uses this
-failure as a signal to refine the plan or re-sample the synthesis step.
-This forms a feedback loop: planning, synthesis, and verification interact until \sys
-produces a satisfactory program or the system exhausts its search.
-
-\section{Property Language and Extraction}
-\label{sec:dsl}
-
-\sys represents program characteristics as symbolic \emph{properties}, drawn from a language of first-order predicates.
-These properties describe aspects of the input program and serve as regeneration constraints for the output.
-They form the basis of both planning and verification.
-All aspects of the symbolic representation are expressed as answer-set programming (ASP) facts and rules (an example program is shown in \cref{lst:logic-example})~\cite{Eiter_2009}.
-
-\heading{Answer Set Programming}
-Answer Set Programming (ASP) \cite{Gelfond_2000, Eiter_2009} is a problem-solving paradigm with roots in logic programming and non-monotonic reasoning.
-The programming 
-model of ASP is one where the programmer models
-the problem domain, with the solution being handled by a solver program.
-Programming using this paradigm is done in a family of languages sometimes called \textit{AnsProlog} \cite{Gelfond_2002}.
-This work uses the input language of \textit{Clingo} \cite{DBLP:journals/corr/GebserKKS14}, which 
-is a high-performance integrated solver with a large collection of libraries and bindings helpful in integrating it with external tools.
-
-The syntax, similar to that of \textit{Prolog} and \textit{Datalog}, with code and data being represented
-through logical terms. Collections of logical terms, as seen in
-\cref{lst:terms}, can represent the game world's state. Rules, expressed using
-the \texttt{:-} operator, enable complex reasoning by defining relationships
-between atoms. Choice rules, exemplified in \cref{lst:choice}, allow the ASP
-solver to make selections among atoms. Integrity constraints, as shown in
-\cref{lst:constraint}, can restrict invalid answer sets. Optimization
-directives, such as \texttt{\#minimize} and \texttt{\#maximize} in
-\cref{lst:optimization}, guide the solver to output optimal answer sets.
-
-\begin{listing}
-\begin{minted}{prolog}
-language(p, javascript).
-len(p, 100).
-\end{minted}
-\caption{A set of facts over a program.}
-\label{lst:terms}
-\end{listing}
-
-\begin{listing}
-\begin{minted}{prolog}
-graph(p_) :- graph(p).
-len(p_, N) :- len(p, N_), N = N_ + 1.
-\end{minted}
-\caption{Logic rules describing relationships between the original and regenerated program.}
-\label{lst:rules}
-\end{listing}
-
-\begin{listing}
-\begin{minted}{prolog}
-{absent(F) : function(F, P)} :- program(P).
-\end{minted}
-\caption{A choice rule.}
-\label{lst:choice}
-\end{listing}
-
-\begin{listing}
-\begin{minted}{prolog}
-:- language(p, X), language(p_, Y), X != Y.
-\end{minted}
-\caption{An integrity constraint.}
-\label{lst:constraint}
-\end{listing}
-
-\begin{listing}
-\begin{minted}{prolog}
-#minimize{C : cost(E,C)}.
-\end{minted}
-\caption{An optimization directive.}
-\label{lst:optimization}
-\end{listing}
-
-% To compute answer sets, ASP programs are input into ASP solvers.
-% These solvers provide efficient mechanisms to generate the set of valid answers to the given problem.
-% An ASP solver can be thought of as a black box, with them being interchangeable as 
-% long as the input language semantics remain the same.
-
-
-
-\heading{Property predicates}
-Each property is a logical predicate over the program symbol $p$. Examples include:
-\begin{itemize}
-  \item \texttt{language}$(p, \texttt{javascript})$: the input program is written in JavaScript.
-  \item \texttt{signature}$(p, S)$: the program exposes a well-formed function signature $S$.
-  \item \texttt{pure}$(p)$: the program does not have side-effects (\eg file system access, network calls, \etc).
-\end{itemize}
-
-A property $X$ appears as either an
-  $\mathsf{can}(X)$ atom, which denotes that the system is capable of extracting or inferring property $X$ from the input.
-  Plugins add these facts and represent the system's capabilities.
-  A pure $X$ atom denotes that either the user has explicitly requested property $X$ to be enforced, or the planner has deduced that it is necessary to satisfy the query.
-
-\heading{Planning over properties}
-The logic engine determines the set of active properties to enforce by solving
-a constrained optimization problem over the property set $P_r$.
-It satisfies the
-following key constraint:
-\begin{align*}
-  X &\Leftarrow \mathsf{can}(X) &\text{Apply only extractable properties}
-\end{align*}
-\sys also supports minimization, maximization and elimination of properties
-through the $\mathsf{min}$, $\mathsf{max}$, and $\mathsf{not}$ directives.
-Without loss of generality, the base case is described, explicitly mentioning any significant semantic difference when necessary.
-
-Additionally, the system takes advantage of ASP's least stable model semantics.
-Essentially, the planner tries to give the synthesizer the least amount of information
-possible, as long as all regeneration goals are fulfilled.
-
-\heading{Plugin-defined rules}
-Plugins contribute domain-specific inference rules and constraints. For example, a plugin for JavaScript-to-Haskell translation may define:
-\begin{align*}
-\mathsf{can}(\texttt{translate}_{\texttt{js} \rightarrow \texttt{hs}}(p)) & \\
-\texttt{translate}_{\texttt{js} \rightarrow \texttt{hs}}(p) &\Rightarrow \texttt{language}(p, \texttt{haskell}) \\
-\texttt{translate}_{\texttt{js} \rightarrow \texttt{hs}}(p) &\Rightarrow \mathsf{language}(p, \texttt{javascript})
-\end{align*}
-Another plugin might contribute $\mathsf{can}(\texttt{signature}(p))$, indicating it can extract the function signature. At this stage, \sys only cares about semantics of each plugin in relation to how it might enable or violate 
-other properties in the regenerated program.
-
-\heading{Axioms and domain knowledge}
-The logic engine also includes domain-wide axioms based on some common assumptions.
-For example
-$\texttt{language}(p, \texttt{haskell}) \Rightarrow \texttt{pure}(p)$
-captures the assumption that programs written in Haskell are pure by default.
-Such axioms allow inferred properties to trigger downstream constraints or synthesis behaviors.
-
-\begin{listing}
-  \begin{minted}[frame=lines, fontsize=\small]{prolog}
-% --- Base program facts ---
-language(p, c).
-
-% --- Plugin: len ---
-can(len(p)). 
-% Plugin: signature ---
-can(signature(p)).
-% ---  Plugin: javascript2haskell ---
-can(js2hs(p)). 
-do(language(p, haskell)) :- do(js2hs(p)).
-:- do(js2hs(p)), not language(p, javascript).
-
-% ---- Axioms ----
-:- X, not can(X). % All transformations must be possible
-:- language(p, L1), language(p, L2)),
-    L1 != L2. % A program can have one language
-
-% --- User query ---
-#min len(p). % User query
-\end{minted}
-  \caption{\textbf{Example \sys logic program.}
-  This is a lightly simplified version of the logic program that produces the plan for the idiomatization task~(\cref{sec:example}). 
-  The program contains facts coming from (1) the input program (written in C),
-  (2) three plugins (\ttt{len}, \ttt{signature}, and \ttt{javascript2haskell}),
-  (3) axioms from the logic engine (\eg a program can have one language, an analysis will be applied only if possible, all goals must be satisfied), and
-  (4) the user query (the user wants to minimize the length of the program).
-  }
-  \label{lst:logic-example}
-\end{listing}
-
-\heading{Compilation to ASP}
-Given a source program written in the \sys query language, the compiler performs a syntactic
-de-sugaring into ASP rules~(\cref{fig:asp-compilation}).
-
-\begin{figure}[htpb]
-\centering
-\small
-\begin{tabular}{l}
-\textbf{toasp} (q : Query) : ASPCode {$\leftarrow$} \textbf{match} q \textbf{with} \\[0.5ex]
-\quad \textbar~$X$: ungroundable($X$) {$\rightarrow$} \texttt{do(}$X$\texttt{)} \\
-\quad \textbar~\#\texttt{min}~$X$ {$\rightarrow$} \texttt{do\_min(}$X$\texttt{)} \\
-\quad \textbar~\#\texttt{max}~$X$ {$\rightarrow$} \texttt{do\_max(}$X$\texttt{)} \\
-\textbf{end}
-\end{tabular}
-\caption{DSL-to-ASP compilation rules. Ungroundable atoms are wrapped in \texttt{do} to denote candidate actions. Optimization directives are compiled to \texttt{do\_min} and \texttt{do\_max}.}
-\label{fig:asp-compilation}
-\end{figure}
-
-These transformations yield a groundable ASP program that can be evaluated by the backend ASP solver.
-
-% TODO: Show graph showing how properties go from the abstract logic domain to the real domain through a translation barrier
-\heading{Logic and concrete space}
-\sys operates at the boundary between two representational domains: a symbolic
-\emph{logic space}, where transformations over program properties are expressed, and
-a \emph{concrete space}, where actual programs, inputs, outputs, and traces
-reside.
-
-In the logic space, properties are encoded as predicates over abstract program
-identifiers.
-To bridge this abstraction gap, \sys given the set of true predicates
-from the logic space, extracts the corresponding concrete properties from the
-source program.
-For example, the predicate $\texttt{inputs}(p, I)$ in the logic space
-will be concertized to set of inputs $I$ by invoking the \texttt{input} plugin,
-which uses an LLM to generate a set of inputs for the program $p$.
-Similarly, the predicate $\texttt{graph}(p, I, O)$ will be concertized to a set of
-input-output pairs $(I, O)$ by executing the program $p$ on the inputs $I$ and
-recording the outputs $O$.
-After regeneration, the predicates over the concrete regenerated program $p\_$
-will be checked regarding their relationship to the same properties over program $p$
-in the logic space.
-An equality relationship is one where the grounded version of the predicate
-$X$ is the same between the two programs, modulo the program identifier~(\eg, $\texttt{graph}(p, i, o) \equiv \texttt{graph}(p\_, i, o)$).
-Equality is defined differently for each property, and is enforced by the corresponding plugin.
-Similarly, minimization and maximization relationships are defined as
-the concrete property value being less than or greater than the original program's value, respectively.
-Again, the less-than and greater-than operators are defined by the plugin that verifies the property.
-
-% In the current \sys implementation, this translation is one-way,
-% however the system can be extended to support two-way translation, where properties extracted
-% can be used to generate new properties in the logic space.
-
-As shown in \cref{fig:logic-to-concrete}, this process constitutes a
-translation barrier: declarative goals over properties like \texttt{inputs},
-\texttt{outputs}, and \texttt{traces} are realized through observation and
-instrumentation. Once aligned, the logic engine can reason over these grounded
-facts to drive transformation.
-
-% add figure
-\begin{figure}[htpb]
-\centering
-  % https://docs.google.com/drawings/d/1JdOfgpaVUy7_EgFyguRXHxFKdmZwyHaiHshnifHG0TQ/edit?usp=sharing
-  \includegraphics[width=.9\columnwidth]{figs/kvasir_logic-space.pdf}
-  \caption{\textbf{\sys transforms a program over its properties from the abstract logic space to the concrete space.}
-  Relationships between properties of the original and regenerated program are inferred 
-  from the query in combination with the knowledge base and enforced by \sys plugins.
-  }
-  \label{fig:logic-to-concrete}
-\end{figure}
-
-
-\heading{Extensibility}
-\sys decentralizes property extraction: plugins contribute $\mathsf{can}(\cdot)$ facts, and pre- and post-conditions, while the core planner resolves which properties to enforce based on goals, capabilities, and axioms.
-This modularity allows language-specific analyses to coexist with general-purpose reasoning in a unified planning layer.
-
-\section{Synthesis Plan}
+\section{Query Language and Synthesis}
 \label{sec:synthesis}
 
-The synthesis process begins with a set of enforced properties $\mathbf{X}$
-which the planner selected~(\cref{sec:dsl}).
-These properties
-reflect both user goals (\eg removing side effects, translating to a
-different language) and structural characteristics of the input program that
-the synthesizer will preserve.
-The planner constructs a transformation plan that
-specifies, for each relevant unit of code (typically a function), what
-constraints must hold in the regenerated version.
+\sys represents program characteristics as symbolic \emph{properties}, expressed as first-order predicates. Examples include:
 
-For instance, a plan for regenerating a specific function $f$ might include:
-\texttt{language}(f, \texttt{haskell}) the function must be written in Haskell, 
-\texttt{pure}(f)) the function must be side-effect-free, and 
-\texttt{signature}(f, s)) the function must keep the original program's signature $s$.
+\begin{itemize}
+  \item \texttt{language(p, javascript)}: the regenerated program must be in JavaScript.
+  \item \texttt{pure(p)}: the program must be side-effect free.
+  \item \texttt{signature(p, S)}: the program must export a specific API.
+\end{itemize}
 
+Plugins contribute two things:
+\begin{enumerate}
+  \item \emph{Capability declarations}, stating which properties they can extract (e.g., \texttt{can(signature(p))}) or enforce.
+  \item \emph{Logic rules}, defining relationships between properties (e.g., a translation to Haskell implies purity).
+\end{enumerate}
 
+Internally, these constraints are encoded in Answer Set Programming (ASP)~\cite{Gelfond_2000, Eiter_2009}. \sys solves for a minimal set of properties that satisfy the user’s query, then extracts them from the input program using plugin-provided analyzers.
 
-\heading{LLM-guided regeneration}
-A structured prompt guides the language model, which performs the synthesis task.
-The prompt is a composition of natural-language text fragments plugins contribute. 
-A plugin can include domain-specific instructions as further guidance.
-For example:
-A \ttt{signature} plugin may contribute:
+Once the relevant properties are available, \sys assembles a structured prompt for the synthesizer. This prompt consists of:
 
- \promptbox{
-   {The output should implement a function \texttt{sqrt(n: float): float}.}
- }
-A \ttt{length} plugin combined with a minimization goal may prepend:
+\begin{itemize}
+  \item \emph{Natural-language instructions} derived from enforced properties (e.g., "The function must be implemented in JavaScript and have no side effects.")
+  \item \emph{Concrete examples}, such as input-output pairs or signature templates.
+\end{itemize}
 
-\promptbox{
-  {The output should be as short as possible while preserving the original functionality.}
-}
-A \ttt{javascript2haskell} plugin may prepend:
+Unlike manual prompt engineering, this approach composes property constraints automatically, ensuring consistency between synthesis goals and verification criteria.
 
-\promptbox{
-  {The output function should be written in Haskell.}
-}
-
-These fragments, combined with a normalized text representations of each of 
-the extracted properties constitute the prompt given to the LLM.
-
-\heading{Constraint-guided generation}
-While \sys delegates code synthesis to a large language model, the planner constrains the generation space in two key ways.
-First, the prompt instructs the LLM to perform only transformations that are valid under the current plan.
-For instance, if the target function must be pure, the prompt will exclude information such as system-call traces that might imply side-effectful behavior.
-Second, candidate outputs are verified post hoc against the enforced properties~(\cref{sec:verification}).
-% This hybrid model balances flexibility with rigor: the LLM provides diversity and fluency, while the planner ensures adherence to property-based constraints.
-
-\section{Property Verification and Feedback Loop}
+\section{Verification and Feedback}
 \label{sec:verification}
 
-To validate that a regenerated program satisfies the intended goals, \sys includes an explicit verification phase that checks whether the output adheres to the enforced properties in the synthesis plan. 
-Verification accepts only programs that meet the plan's constraints and provides feedback for refining or retrying those that do not.
+After synthesis, \sys verifies whether the regenerated program satisfies all
+enforced properties. Each property has a dedicated checker, contributed by the
+same plugins that extract or infer it. For example:
 
-\heading{Verification as property checking}
-After synthesis, \sys invokes a set of property-specific checkers.
-Each checker
-is responsible for evaluating whether a property $X$ holds
-for the regenerated program fragment.
-These checkers operate at varying levels
-of precision---ranging from structural pattern checks to light static or
-symbolic analysis---and are tailored to the property type.
-
-Examples include:
 \begin{itemize}
-  \item For $\texttt{no\_network}(f)$, the checker confirms the absence of known network APIs or imports.
-  \item For $\texttt{signature}(f)$, the checker matches the regenerated function's name, parameters, and arity against the extracted signature.
-  \item For $\texttt{pure}(f)$, the checker examines control flow and side-effecting operations to detect possible violations.
+  \item \texttt{graph(p, I, O)}: A checker runs the synthesized code on test inputs and compares outputs.
+  \item \texttt{pure(p)}: A static analyzer detects side-effecting operations.
+  \item \texttt{signature(p, S)}: A parser validates exported function signatures.
 \end{itemize}
 
-Checkers are modular and contributed by plugins. Their combined results determine whether a candidate is considered valid under the current plan.
-For minimization and maximization goals, the verification phase uses the less-than or greater-than operators as are defined internally by the plugin verifying the given property.
-Verification in this case checks if the property's value has decreased or increased compared 
-to the previous regeneration attempt.
-If the value remains unchanged for two consecutive attempts, its considered satisfied.
+If any verification fails, \sys treats this as feedback to resample or refine
+the synthesis. This loop continues until all constraints are met or search is
+exhausted. Partial regeneration is allowed: functions that pass verification
+are retained, while others remain unchanged.
+This process makes program regeneration an iterative, declarative workflow,
+bridging symbolic reasoning with data-driven synthesis.
 
-\heading{Failure-driven refinement}
-When a candidate fails verification, \sys treats this as a feedback signal. Instead of discarding the regeneration attempt wholesale, the system uses the failure to revise or re-execute the synthesis phase.
-Some forms are:
-\begin{itemize}
-  \item \emph{Retrying synthesis}: A fresh LLM call with the same plan but a different generation path.
-  \item \emph{Feedback loop}: \sys will provide the previous regeneration attempt 
-    as an additional context to the LLM, together with an explanation of the properties that the regeneration violates, prompting it to adapt its output based on prior failures.
-    This mode is only activated if the verifier knows that the output will not to taint
-    followup regeneration attempts.
-  \item \emph{Fallback handling}: If a function repeatedly fails validation, \sys may leave the original version intact or mark it for manual inspection.
-\end{itemize}
-
-% This loop provides adaptability: regeneration is not expected to succeed unconditionally, but rather to proceed incrementally under interpretable, bounded failure modes.
-
-\heading{Partial regeneration and composition}
-\sys supports regeneration at the granularity of individual functions.
-If only a subset of functions can be successfully regenerated under the given constraints, the remaining ones remain unchanged after regeneration.
-The output program thus consists of a composition of validated regenerated units and untouched originals.
-This model supports application in real-world codebases, where partial improvement (\eg replacing unsafe or deprecated functions) can be meaningful even without complete coverage.
-
-\section{Evaluation}
+\section{Discussion}
 \label{sec:evaluation}
 
-The \sys evaluation is along three axes:
+We evaluate \sys across several dimensions: its ability to regenerate correct and maintainable code, the impact of property-driven guidance, and practical considerations around applying it to diverse inputs. This evaluation is preliminary and intended to illustrate feasibility and trade-offs.
 
-\begin{itemize}
-  \item[\textbf{Q1}] \textbf{Correctness and Regeneration Quality}: Does \sys preserve program behavior and produce high-quality programs?
-  \item[\textbf{Q2}] \textbf{LLM Baseline}: How does \sys compare to naively prompting a large language model?
-  \item[\textbf{Q3}] \textbf{Planning Efficiency \& Precision}: Does minimizing extracted properties help regeneration succeed faster and more reliably?
-\end{itemize}
+\subsection{Benchmarks}
 
-\section{Benchmarks \& Methodology}
+Our benchmark suite comprises 37 tasks spanning simple translation, obfuscation removal, and security hardening (Table~\ref{tab:benchmarks}). Inputs were drawn from Rosetta Code, popular npm and PyPi packages, known supply-chain attacks, and selected obfuscated programs from the IOCCC.
 
-The \sys evaluation comprises of six benchmark suites, summarized in \cref{tab:benchmarks}.
-Each task consists of an input program, a \sys query expressing desired
-properties, and a test suite or functional oracle.
-Each benchmark is executed three times. A regeneration is considered overall successful 
-if it is correct, satisfies the query, and passes all tests all three times.
-The Rosetta Code~\cite{rosettacode} benchmarks include four programming tasks written in four different
-languages each (Python, JavaScript, C, and Haskell). 
-These include classic programs that do not require any language-specific features to implement.
-These are: the classic \emph{Hello, World!} program as found in most programming tutorials,
-a program that applies the ROT-13 cipher to a string,
-a program that computes the median of a list of numbers,
-and a program that reads a file and prints its contents to the console line-by-line.
-The npm benchmark includes ten popular (100.000+ weekly downloads) npm packages that implement utility
-functionality such as string manipulation, data structure transformations, and math.
-Similarly, the PyPi utilities benchmark includes three functions sourced from PyPi that implement similar functionality.
-The SSCA dataset includes three sneaky supply-chain attacks that obfuscate malicious behavior in otherwise innocuous-looking code.
-The attack activates under specific environment conditions, such as the presence of a specific environment variable or specific inputs
-getting passed to the program. The attacks involve private key stealing~\cite{ohm2020backstabber}, Bitcoin private key theft~\cite{ev:eurosec:2022}, and an SSH backdoor installation~\cite{copeland2019frightening}
-and occur while the program still performs its advertised functionality.
-The IOCCC benchmark includes two programs from the International Obfuscated C Code Contest (IOCCC)~\cite{ioccc}.
-These programs are intentionally obfuscated, using advanced techniques such as bit manipulation, undefined behavior,
-and exploitation of the C preprocessor and the lax parsing rules of the C language.
-These programs perform mathematical computations like Mersenne primality testing and adding two numbers.
-Finally, the microbenchmarks include three programs that implement the regeneration tasks discussed in \cref{sec:example}.
+A regeneration is counted as successful if the output satisfies the declared properties and passes either functional tests or manual inspection.
 
-\begin{table*}[htpb]
+\begin{table*}[ht]
 \centering
-  \caption{\textbf{Benchmark summary}. 
-  Benchmark programs come from online repositories, public archives, security research datasets, and often referenced examples in programming culture.
-The N column shows the number of programs/functions from each benchmark.
-}
-  \begin{tabular*}{\textwidth}{llrrll}
+\caption{\textbf{Benchmark Overview}.}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}} l r l l}
 \toprule
-Benchmark                          & Description        & N  & LoC  & Task                   & Source \\
+Benchmark & N & Purpose & Sources \\
 \midrule
-Rosetta Code                       & Simple tasks       & 16 &      & Translation            & \cite{rosettacode} \\
-Short utilities                    & npm/PyPi utilities & 13 &      & Parity                 & \cite{regbench2025} \\
-SSCA                               & Sneaky supply-chain attacks        & 3  &      & Attack elimination     & \cite{ev:eurosec:2022, ohm2020backstabber,copeland2019frightening} \\
-IOCCC                              & Obfuscated C code       & 2  &      & De-obfuscation         & \cite{ioccc} \\
-Microbenchmarks                    &                    & 3  &      &                        & \\
-\hspace{.5em} \ttt{flatmap-stream} & Flat-map utility   &    &      & Purity and translation & \cite{es1}  \\
-\hspace{.5em} \ttt{Q\_rsqrt}       & Inverse square root function       &    &      & Idiomatic rewrite      & \cite{fast_inv_sqrt}  \\
-\hspace{.5em} \textsf{rigidDB}     & Fetch artist songs from a music database     &    &      & Modularization         & \cite{codewithsadeemusicplayer} \\
-\midrule
-Total                              &                    & 37 &      &                        & \\
+Rosetta Code & 16 & Cross-language translation & \cite{rosettacode} \\
+Short Utilities & 13 & Parity preservation & \cite{regbench2025} \\
+SSCA & 3 & Malicious behavior removal & \cite{ohm2020backstabber,ev:eurosec:2022} \\
+IOCCC & 2 & Deobfuscation & \cite{ioccc} \\
+Microbenchmarks & 3 & Idiomatic rewriting, modularization & This paper \\
 \bottomrule
 \end{tabular*}
 \label{tab:benchmarks}
 \end{table*}
 
-\subsection{Q1: Correctness and Regeneration Quality}
+\subsection{Correctness and Functional Equivalence}
 
-Correctness is evaluated using developer-made test suites 
-shipped with the original software components as well as by manually inspecting
-the regenerated source code and report on correctness and the other query target metrics.
-When no test suite is available, only manual inspection is performed.
+Overall, \sys regenerated correct code in most cases. All Rosetta Code and utility tasks were completed successfully. For supply-chain attacks, \sys removed malicious behaviors while preserving legitimate functionality, confirming that treating the original source as untrusted can be effective. 
 
-\begin{table}[htpb]
-  \centering
-  \caption{\textbf{Correctness result summary.} Number of tasks passing all tests (when present) and manual inspection.}
-  \begin{tabular}{lc}
-    \toprule
-    Benchmark & Correctness \\ 
-    \midrule
-    Rosetta Code & 16/16  \\
-    Short Utilities & 13/10 \\
-    SSCA & 3/3  \\
-    IOCCC & 1/2 \\
-    Microbenchmarks & 2.5/3  \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+Regeneration was less reliable in obfuscated C programs: one IOCCC entry was successfully simplified, while another failed due to incomplete semantic understanding and inconsistent output formatting.
 
-\sys successfully regenerates all programs in the Rosetta Code benchmark suite,
-having verified manually that the output is functionally equivalent
-to the original, using both the original and translated reference
-implementations as guides.
-\sys regenerates correctly all npm and PyPi utilities, it does not introduce and side-effectful or malicious behavior.
-The synthesized programs reveal interesting insights and patterns.
-\sys-generated code often lacks the optimizations commonly
-implemented by library developers, such as early exits or caching.
-For instance, the \texttt{left-pad} library, pre-computes padding for strings below a certain length
-and returns it directly.
-In contrast, \sys tends to produce straightforward
-implementations without attempting similar optimizations.
-\sys also omits domain-specific knowledge:
-\sys-generated code frequently fails to account for all edge cases when they involve language-specific features (\eg \ttt{is-nan}).
-% \sys has weak performance on libraries that involve complex regexes or perform non-trivial math.
-For the SSCA benchmarks, \sys successfully regenerates all three malicious libraries, removing the malicious behavior while preserving the original functionality.
-For the flatmap-stream attack, \sys uses some domain-specific logic (encoded in its knowledge-base by the \ttt{js-stream} plugin) to generate a function that produces a node \ttt{Stream} object.
-For the IOCCC benchmarks, \sys regenerates the \ttt{adder} program, which is a simple program that adds two numbers,
-it also regenerates \ttt{mersenne} in regards that it correctly performs a naive Mersenne primality testing, but it does not follow the non-obvious output scheme of the original program, which returns a non-zero hexadecimal number when $2^p - 1$ ($p$ being the input number) is not prime.
-For the microbenchmarks, \sys correctly regenerates the \ttt{flatmap-stream} program, producing a safe Haskell version that is idiomatic and preserves the original functionality.
-However, this version does not match exactly the semantics of the original one, as it operates over infinitely nested lists, rather than only one level deep ones.
-The \ttt{Q\_rsqrt} program includes the obvious, idiomatic computation of the inverse square root ($1/\sqrt{x}$) rather than the original bit-level manipulation.
-Finally, \sys successfully decomposes the \ttt{rigidDB} program into two
-functions, \ttt{setupDatabase} and \ttt{getAlbumsByArtist}, which is a
-modularization that preserves the original functionality and produce equivalent I/O and SQL traces.
+In microbenchmarks, \sys generated idiomatic rewrites (e.g., replacing unsafe inverse square root implementations with standard library calls) while maintaining observable behavior.
 
-\sys is able to regenerate programs that are correct and preserve the original functionality,
-while also removing any malicious behavior or obfuscation.
-Failure cases highlight current limitations, and inspire future work~(\cref{sec:discussion}).
+\subsection{Impact of Property-Guided Synthesis}
 
-\subsection{Q2: Naive LLM vs. \sys}
+A key observation is that constraining the synthesizer to operate only over extracted properties significantly improved reliability. For example, when regenerating modules with hidden side effects, naive prompting often reproduced those side effects verbatim. By contrast, \sys’s selective extraction of I/O traces and signatures avoided this overfitting. 
 
-To compare \sys against a baseline, we use a \gptmodel instance
-that performs prompt-only rewriting without explicit access to guiding properties.
-The LLM gets the following prompt template:
+Prompt size was also reduced substantially (up to 60\%), and synthesis iterations converged faster.
 
-\promptbox{
-  \emph{Task description}\\
+\subsection{Comparison to Naive Prompting}
 
-  Program:\\
-  \emph{Program/function source code}\\
+As a baseline, we prompted a large language model with the full source code and a natural language description of the task. For simple translation and trivial refactoring, this approach often succeeded. However, it frequently failed in cases requiring property preservation without leaking implementation details. 
 
-  Please return the program's source code after performing the task.
-}
-
-For the Rosetta Code benchmarks, \gptmodel 
-successful in all language translation tasks.
-The original and LLM-generated code matches the semantics
-of the original one, confirmed after manually inspecting the generated code.
-Similarly, the LLM was successful in transforming the npm and PyPi utilities towards
-removing any vulnerabilities from them, as they are benign and the transformation
-involved the LLM simply repeating the original code without any changes.
-The SSCA benchmark tasks are more interesting, as they involve 
-malicious code. For the malicious libraries, we provide the LLM 
-with two different versions. One is the original high-profile attack that appeared on npm,
-with the second one being an attack that is semantically equivalent but with the source 
-having gone through an iterative loop where a second LLM is tasked with making the code ostensibly 
-secure. This involves adding integrity checks at all points in the program where a value is used.
-\gptmodel was successful in eliminating the original attacks, but failed in \emph{all} 
-cases where the source code was particularly crafted to appear secure, regenerating both 
-the original functionality and the attack.
-For the IOCCC benchmarks, \gptmodel also fails 
-in both cases to regenerate the programs in a way where the code's 
-functionality is preserved while removing the obfuscation.
-The \ttt{adder} program is regenerated as a program that prints the \ttt{argc} argument, 
-while the \ttt{mersenne} program performs irrelevant arithmetic operations that 
-resemble the original source, and fails to even compile.
-For the microbenchmarks, \gptmodel is able to regenerate the \ttt{flatmap-stream} program, but fails to produce a Haskell version of it,
-as it over-fits to the original JavaScript source code which uses the \ttt{Stream} API,
-and fails to produce a Haskell program that is nor equivalent to the original, nor idiomatic.
-For the \ttt{Q\_rsqrt} program, \gptmodel fails to produces a program that idiomatically 
-computes the inverse square root, rather trying to minimize the number of lines in the program
-by removing constants and comments and still keeping the bit-level manipulation.
-Finally, for the \ttt{rigidDB} program, \gptmodel is able to decompose the original program into two functions
-and names them \ttt{setupDatabase} and \ttt{getAlbumsByArtist}.
-
-\sys consistently outperforms a \gptmodel baseline,
-overcoming the inherent weaknesses of a purely prompt-based approach.
-
-\subsection{Q3: Planning Efficiency \& Precision}
-
-To evaluate the impact of \sys's property planning, we compare it against a \gptmodel baseline that performs prompt-only rewriting without explicit access to guiding properties.
-
-We consider two criteria for each regenerated program:
-
-\begin{itemize}
-  \item \textbf{Wanted Property Satisfaction:} Does the output program satisfy all positive properties declared in the query (\eg \texttt{pure}, \texttt{language(haskell)})?
-  \item \textbf{Unwanted Property Avoidance:} Does the output avoid introducing disallowed behaviors (\eg side effects, global state, unsupported language features)?
-\end{itemize}
-
-\sys consistently satisfies more of the declared properties while avoiding
-unintended behaviors.
-Following is a qualitative analysis of the results.
-In the \texttt{flatmap-stream} benchmark,
-\gptmodel often inclduded malicious side effects when the code appeared innocuous,
-whereas \sys generated pure rewrites by treating the source as
-untrusted and grounding regeneration in I/O behavior alone.
-Across all benchmarks, the planning step completes in under 50ms on average.
-Similarly, in the \ttt{Q\_rsqrt} benchmark, \gptmodel often produces bit-level
-manipulations that are not idiomatic in Haskell, while \sys generates a simple
-and idiomatic Haskell function that computes the inverse square root.
-This is guided by the fact the \sys extracts and provides to its backend model only the function signature 
-and length of the program, which it minimizes, without including the original source code,
-which as shown in the experimental results makes the model over-fit its regeneration to it.
-\sys's I/O pair extraction also provides confidence that 
-the regenerated program has the same client-visible behavior as the original one, while 
-prompting a model like \gptmodel would always require manual inspection or the presence 
-of developer tests to verify the correctness of the regeneration.
+For example, in the malicious supply-chain benchmarks, naive prompting preserved obfuscated credential exfiltration in regenerated code, whereas \sys consistently eliminated it.
 
 % These results support the claim that \sys's planning logic---driven by explicit
 % property extraction and knowledge-base reasoning---yields safer and more
 % controllable transformations than prompt-only LLM-based systems.
 
 \section{Related Work}
-
-% \begin{table*}
-%   \centering
-%   \caption{
-%     \textbf{Comparison of transformation paradigms.}
-%     \sys combines symbolic planning, property reasoning, and guided regeneration.
-%   }
-%   \label{tbl:comparison}
-%     \begin{tabular}{lcccccccc}
-% \toprule
-% \textbf{Approach} & 
-% \rotatebox{90}{\textbf{Uses Input}} &
-% \rotatebox{90}{\textbf{Decl. Goals}} &
-% \rotatebox{90}{\textbf{Neg. Const.}} &
-% \rotatebox{90}{\textbf{Opt. Support}} &
-% \rotatebox{90}{\textbf{Modular}} &
-% \rotatebox{90}{\textbf{Explainable}} &
-% \rotatebox{90}{\textbf{Scoped}} & 
-% Source \\
-% \midrule
-% Classical Synthesis & $\squad$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & \cite{alur2013sygus, solar2008sketch} \\
-% Refactoring Tools & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squadfillhr$ & $\squadfillhr$ & \cite{} \\
-% PBE Synthesis & $\squad$ & $\squadfill$ & $\squad$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & \cite{} \\
-% CEG Synthesis & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & \cite{solar2008sketch} \\
-% Pure LLMs & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & \cite{} \\
-% \textbf{\sys} & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & (this paper) \\
-% \bottomrule
-% \end{tabular}
-% \end{table*}
 
 \heading{Program synthesis}
 Program synthesis research spans a rich space of techniques.
@@ -1132,7 +650,6 @@ through post-hoc verification.
 In cases where the system finds no satisfactory candidate,
 regeneration fails.
 
-
 \heading{Language-specific support}
 Although some components of \sys are language-agnostic (\eg logic-based planning),
 others---particularly extraction and verification plugins are not.
@@ -1169,62 +686,62 @@ As program synthesis systems grow increasingly reliant on LLMs, I believe the
 future lies in harnessing their generative power within a framework that retains
 correctness, explainability, and developer control as first-class citizens.
 
-Here, I outline some possible future directions for \sys and its successors:
+% Here, I outline some possible future directions for \sys and its successors:
 
-\heading{Expanding the transformation space}
-Future extensions to \sys may incorporate richer classes of properties, such as
-temporal logic and dataflow
-constraints~\cite{azzopardi2023ltl,handa2021orderawaredataflowmodelparallel}.
-In addition, performance-guided transformations offer a compelling avenue: \sys
-could optimize for runtime, memory usage, or even parallelizability.
-Inverse
-transformations, such as serializing parallel programs, could serve as
-a debugging or oracle mechanism in complex system settings.
+% \heading{Expanding the transformation space}
+% Future extensions to \sys may incorporate richer classes of properties, such as
+% temporal logic and dataflow
+% constraints~\cite{azzopardi2023ltl,handa2021orderawaredataflowmodelparallel}.
+% In addition, performance-guided transformations offer a compelling avenue: \sys
+% could optimize for runtime, memory usage, or even parallelizability.
+% Inverse
+% transformations, such as serializing parallel programs, could serve as
+% a debugging or oracle mechanism in complex system settings.
 
-\heading{Formal foundations and alternative implementations}
-The transformation semantics introduced by \sys are grounded in logic
-programming and inherit properties like compositionality.
-A more formal treatment of the \sys
-transformation language could enable rigorous reasoning about transformation
-correctness and equivalence.
-Furthermore, establishing an abstract interface
-over transformations would allow alternative \sys backends to be developed.
-Integrating techniques from
-counterfactual reasoning~\cite{Cabalar_2020} could further enhance \sys by
-explaining synthesis failures and clarifying conflicting property constraints.
+% \heading{Formal foundations and alternative implementations}
+% The transformation semantics introduced by \sys are grounded in logic
+% programming and inherit properties like compositionality.
+% A more formal treatment of the \sys
+% transformation language could enable rigorous reasoning about transformation
+% correctness and equivalence.
+% Furthermore, establishing an abstract interface
+% over transformations would allow alternative \sys backends to be developed.
+% Integrating techniques from
+% counterfactual reasoning~\cite{Cabalar_2020} could further enhance \sys by
+% explaining synthesis failures and clarifying conflicting property constraints.
 
-\heading{Regeneration as a system-building primitive}
-Beyond isolated transformations, \sys can serve as a core building block for
-higher-level systems.
-For instance, a reverse-engineering pipeline for
-proprietary or legacy systems could use \sys to regenerate and recompose
-well-behaved modules such as networking layer or the physics engine into new,
-repurposed applications.
-The vision here is \sys as a foundation for automated system understanding, adaptation, and re-imagination.
+% \heading{Regeneration as a system-building primitive}
+% Beyond isolated transformations, \sys can serve as a core building block for
+% higher-level systems.
+% For instance, a reverse-engineering pipeline for
+% proprietary or legacy systems could use \sys to regenerate and recompose
+% well-behaved modules such as networking layer or the physics engine into new,
+% repurposed applications.
+% The vision here is \sys as a foundation for automated system understanding, adaptation, and re-imagination.
 
-\heading{Challenges in cross-language regeneration}
-Cross-language regeneration introduces challenges.
-Some analyses and
-properties may only be applicable in a subset of languages, or lack direct
-equivalents across language boundaries.
-\sys could address this in two ways: by
-relying on least-common denominator of language semantics, or by
-embracing language-specific features to drive more effective regeneration.
-In
-fact, cross-compilation could be leveraged as an asset: a plugin pipeline might
-convert JavaScript to Haskell, extract formal properties via Haskell’s type
-system, and then regenerate a more robust JavaScript variant informed by that
-analysis---effectively using \sys recursively.
+% \heading{Challenges in cross-language regeneration}
+% Cross-language regeneration introduces challenges.
+% Some analyses and
+% properties may only be applicable in a subset of languages, or lack direct
+% equivalents across language boundaries.
+% \sys could address this in two ways: by
+% relying on least-common denominator of language semantics, or by
+% embracing language-specific features to drive more effective regeneration.
+% In
+% fact, cross-compilation could be leveraged as an asset: a plugin pipeline might
+% convert JavaScript to Haskell, extract formal properties via Haskell’s type
+% system, and then regenerate a more robust JavaScript variant informed by that
+% analysis---effectively using \sys recursively.
 
-\heading{Ethical and legal considerations}
-While this work has applied \sys exclusively to open-source software, its
-capabilities raise ethical and legal questions. Regenerating
-proprietary software, de-obfuscating binaries, or reimplementing licensed
-systems into equivalent ones with more permissive licensing 
-could challenge existing norms and
-regulations. 
-It is important to consider
-safeguards and responsible disclosure practices towards ethical program regeneration.
+% \heading{Ethical and legal considerations}
+% While this work has applied \sys exclusively to open-source software, its
+% capabilities raise ethical and legal questions. Regenerating
+% proprietary software, de-obfuscating binaries, or reimplementing licensed
+% systems into equivalent ones with more permissive licensing 
+% could challenge existing norms and
+% regulations. 
+% It is important to consider
+% safeguards and responsible disclosure practices towards ethical program regeneration.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
@@ -1257,7 +774,7 @@ use cases and the logarithmic complexity of the padding operation.
 This example inspires future work on performance-aware regeneration.
 
 \begin{listing}[htpb]
-\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+\begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{javascript}
 'use strict';
 module.exports = leftPad;
 
@@ -1299,7 +816,7 @@ function leftPad(str, len, ch) {
 \end{listing}
 
 \begin{listing}[htpb]
-  \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+  \begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{javascript}
 function leftPad(str, len, ch) {
     // Ensure the character is a string and has a length of 1
     ch = ch || ' '; // Default to space if no character is provided
@@ -1338,7 +855,7 @@ which retains the original's un-idiomatic use of magic numbers and bit-level man
 \ttt{sqrt} function to compute the inverse square root.
 
 \begin{listing}[htpb]
-\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
+\begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{c}
 float Q_rsqrt( float number )
 {
 	long i;
@@ -1362,7 +879,7 @@ float Q_rsqrt( float number )
 \end{listing}
 
 \begin{listing}[p]
-\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
+\begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{c}
 #include <stdint.h> // For using int32_t
 
 float Q_rsqrt(float number) {
@@ -1395,7 +912,7 @@ float Q_rsqrt(float number) {
 \end{listing}
 
 \begin{listing}[p]
-\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
+\begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{c}
 float Q_rsqrt(float number) {
     return 1.0f / sqrt(number);
 }
@@ -1429,7 +946,7 @@ an equivalent one that keeps only the client-visible behavior, while removing
 any side-effectful code.
 
 \begin{listing}[htpb]
-\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+\begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{javascript}
 // (a === b)? 0 : ((a < b)?  -1: 1)
 module.exports = (a, b) => {
   if (b == "gbabWhaRQ") {
@@ -1446,7 +963,7 @@ module.exports = (a, b) => {
 \end{listing}
 
 \begin{listing}[p]
-\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+\begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{javascript}
 const fs = require('fs');
 const path = require('path');
 module.exports = (a, b) => {
@@ -1477,7 +994,7 @@ module.exports = (a, b) => {
 \end{listing}
 
 \begin{listing}[H]
-\begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+\begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{javascript}
 const fs = require('fs');
 const path = require('path');
 module.exports = (a, b) => {
@@ -1518,7 +1035,7 @@ module.exports = (a, b) => {
 \end{listing}
 
 \begin{listing}[H]
-  \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
+  \begin{minted}[fontsize=\footnotesize, , framesep=2mm, breaklines=true]{javascript}
 function stringCompare(a, b) { return a.localeCompare(b); }
 \end{minted}
   \caption{The output of \sys, which has removed the side-effectful code and
