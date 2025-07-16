@@ -110,9 +110,22 @@ even on instances where a state-of-the-art LLM fails to do so.
 \maketitle
 
 \section{Introduction}
+% \begin{figure}[t]
+%   % https://docs.google.com/drawings/d/1LAmdVYjfAID24eSM-hl5PRhVg9fRMJMWYETsvvcyAuU/edit?usp=sharing
+%   \includegraphics[width=.9\columnwidth]{figs/kvasir_overview.pdf}
+%   \caption{\textbf{\sys overview}
+% Given a transformation query, and a source program, \sys extracts a minimal set
+%   of properties,
+%   guided by a logic engine and knowledge base.
+%   It then synthesizes a new program $P'$ that satisfies the query, verifying
+%   that wanted properties are present and unwanted properties are absent in $P'$.
+% }
+%   \label{fig:overview}
+% \end{figure}
+
 \begin{figure}[t]
-  % https://docs.google.com/drawings/d/1LAmdVYjfAID24eSM-hl5PRhVg9fRMJMWYETsvvcyAuU/edit?usp=sharing
-  \includegraphics[width=.9\columnwidth]{figs/kvasir_overview.pdf}
+  % https://docs.google.com/drawings/d/1ozMu2B0RUhyLWC_rM6GLBrioov80-M06CBqYRAhCk18/edit
+  \includegraphics[width=.9\columnwidth]{figs/kvasir_projection.pdf}
   \caption{\textbf{\sys overview}
 Given a transformation query, and a source program, \sys extracts a minimal set
   of properties,
@@ -120,7 +133,7 @@ Given a transformation query, and a source program, \sys extracts a minimal set
   It then synthesizes a new program $P'$ that satisfies the query, verifying
   that wanted properties are present and unwanted properties are absent in $P'$.
 }
-  \label{fig:overview}
+  \label{fig:projection}
 \end{figure}
 
 
@@ -161,7 +174,7 @@ This paper present \sys, a system for \emph{property-guided program regeneration
 to express transformation goals declaratively, as logical constraints over
 program properties such as input/output behavior, side-effect freedom, target
 language, trace equivalence, or modular structure.
-As shown in \cref{fig:overview}, given a source program and
+Given a source program and
 a query, \sys extracts a minimal set of relevant properties, guided by a
 logic engine and a domain-specific knowledge base, and synthesizes a new
 program that satisfies the desired constraints.
@@ -194,8 +207,14 @@ constraint-guided regeneration module.
 
 \begin{figure}[t]
 \centering
-  \includegraphics[width=.9\columnwidth]{example-image-a}
-  \caption{\textbf{Applying \sys to a complex application}}
+  % https://docs.google.com/drawings/d/1zMcTurJ8twCG4BrkSUAJersbNSl5UQkogHqqg88vG9M/edit
+  \includegraphics[width=.9\columnwidth]{figs/kvasir_application.pdf}
+  \caption{\textbf{Applying \sys to a complex game application.}
+  The high level of modularity present in modern applications allows \sys to be applied effectively across a codebase.
+  Edges signify logical dependencies between components 
+  and shaded vertices signify parts of the codebase \sys is applied as part of the example~(\cref{sec:example}).
+  Dotted edges signify ommited layers of dependencies.
+  }
   \label{fig:ex-large-app}
 \end{figure}
 
@@ -327,6 +346,7 @@ library as an optimization for computing normalized vectors.
 The implementation
 exploits type punning to manipulate IEEE floats at the bit level—a technique
 that relies on undefined behavior and reduces portability:
+\begin{listing}
 \begin{minted}{c}
 float Q_rsqrt(float number) {
  long i; float x2, y;
@@ -338,6 +358,8 @@ float Q_rsqrt(float number) {
  y  = y * ( threehalfs - ( x2 * y * y ) );
  return y; }
 \end{minted}
+\caption{An unidiomatic C implementation of the fast inverse square root function popularized by the game Quake III~\cite{fast_inv_sqrt}.}
+\end{listing}
 The following query for \sys uses lines of code as a coarse metric of
 idiomaticity. \sys regenerates the program, minimizing this metric while
 preserving observable behavior over a representative set of numeric inputs:
