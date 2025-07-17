@@ -371,7 +371,7 @@ Having the database initialization being in the same function as
 the database access has architectural and performance implications.
 In addition, there exist systems that can benefit from further decomposition
 of an application towards automatic distribution, parallelization or security~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
-\begin{wrapfigure}[7]{r}{.8\columnwidth}
+\begin{wrapfigure}[6]{r}{.8\columnwidth}
   \begin{minted}{prolog}
 db('music.db'). func(f1). func(f2).
 trace_sql(p_, I, T) :- trace_sql(p, I, T),
@@ -778,14 +778,14 @@ If the value remains unchanged for two consecutive attempts, its considered sati
 
 \heading{Failure-driven refinement}
 When a candidate fails verification, \sys treats this as a feedback signal. Instead of discarding the regeneration attempt wholesale, the system uses the failure to revise or re-execute the synthesis phase.
-Some forms are:
+The forms are:
 \begin{itemize}
   \item \emph{Retrying synthesis}: A fresh LLM call with the same plan but a different generation path.
   \item \emph{Feedback loop}: \sys will provide the previous regeneration attempt 
-    as an additional context to the LLM, together with an explanation of the properties that the regeneration violates, prompting it to adapt its output based on prior failures.
-    This mode is only activated if the verifier knows that the output will not to taint
-    followup regeneration attempts.
-  \item \emph{Fallback handling}: If a function repeatedly fails validation, \sys may leave the original version intact or mark it for manual inspection.
+    as an additional context to the LLM, together with an explanation of the properties that the regeneration violates.
+    A key assumption is that the output will not to taint followup regeneration attempts,
+    which should hold based on the synthesis plan, which takes query and plugin constraints into account.
+  \item \emph{Fallback handling}: If a function fails validation three times, \sys leaves the original version intact or mark it for manual inspection.
 \end{itemize}
 
 % This loop provides adaptability: regeneration is not expected to succeed unconditionally, but rather to proceed incrementally under interpretable, bounded failure modes.
@@ -898,7 +898,7 @@ implementations without attempting similar optimizations.
 \sys-generated code frequently fails to account for all edge cases when they involve language-specific features (\eg \ttt{is-nan}).
 % \sys has weak performance on libraries that involve complex regexes or perform non-trivial math.
 For the SSCA benchmarks, \sys successfully regenerates all three malicious libraries, removing the malicious behavior while preserving the original functionality.
-For the flatmap-stream attack, \sys uses some domain-specific logic (encoded in its knowledge-base by the \ttt{js-stream} plugin) to generate a function that produces a node \ttt{Stream} object.
+For the flatmap-stream attack, \sys uses domain-specific logic (encoded in its knowledge-base by the \ttt{js-stream} plugin) to generate a function that produces a node \ttt{Stream} object.
 For the IOCCC benchmarks, \sys regenerates the \ttt{adder} program, which is a simple program that adds two numbers,
 it also regenerates \ttt{mersenne} in regards that it correctly performs a naive Mersenne primality testing, but it does not follow the non-obvious output scheme of the original program, which returns a non-zero hexadecimal number when $2^p - 1$ ($p$ being the input number) is not prime.
 For the microbenchmarks, \sys correctly regenerates the \ttt{flatmap-stream} program, producing a safe Haskell version that is idiomatic and preserves the original functionality.
@@ -1132,7 +1132,7 @@ As program synthesis systems grow increasingly reliant on LLMs, I believe the
 future lies in harnessing their generative power within a framework that retains
 correctness, explainability, and developer control as first-class citizens.
 
-Here, I outline some possible future directions for \sys and its successors:
+Here, I outline possible future directions for \sys and its successors:
 
 \heading{Expanding the transformation space}
 Future extensions to \sys may incorporate richer classes of properties, such as
@@ -1196,7 +1196,7 @@ safeguards and responsible disclosure practices towards ethical program regenera
 
 \section{Evaluation Samples}
 This section provides a selection of samples from the evaluation of \sys.
-These instances provide some interesting insights into the capabilities of \sys and its shortcomings.
+These instances provide interesting insights into the capabilities of \sys and its shortcomings.
 The samples also provide concrete comparison between \sys and a naive LLM-based approach.
 
 \heading{Left Pad}
