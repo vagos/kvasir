@@ -84,28 +84,21 @@
 % - have a program be more amendable to further analysis or transformation
 
 \begin{abstract}
-Modern software systems are constantly evolving—requiring developers to
-  refactor legacy code, adapt to changing APIs, translate across languages, and
-  patch security vulnerabilities. These transformations are often brittle,
-  manual, and error-prone. Large language models (LLMs) offer new opportunities
-  for automating such tasks, but their outputs are shaped by surface cues, lack
-  semantic guarantees, and require brittle prompting strategies. This paper
-  presents \sys, a system for controllable program regeneration that combines
-  logic-based planning with LLM-guided synthesis.
-Kvasir operates in four stages: (1) a symbolic planner constructs a
-transformation plan using logic rules and a domain-aware knowledge base; (2)
-property extractors analyze the input program to gather relevant semantic
-information; (3) a language model synthesizes candidate programs guided by
-a structured prompt assembled from extracted properties; and (4) a verification
-and feedback loop checks whether the output meets the desired properties and
-iteratively refines the generation process through additional feedback.
+  Software evolution tasks---like security hardening, porting critical components to safer 
+  languages, or refactoring opaque legacy code---are brittle and time-consuming.
+  Large language models (LLMs) have shown promise in automating such tasks,
+  but their outputs are shaped by surface cues, lack
+  semantic guarantees, and their usage often boil down to brittle prompting strategies.
+This paper presents \sys, a system for controllable program regeneration that
+  combines declarative property constraints with LLM-guided synthesis. Unlike
+  prior approaches, \sys treats the input program as an untrusted artifact and
+  explicitly projects it into a minimal set of verifiable properties, such as
+  input/output behavior, execution traces, and API signatures. These properties
+  serve as constraints during synthesis and are checked post hoc to ensure
+  correctness.
 \sys is evaluated on a diverse set of program transformation tasks
 including security hardening, language translation, idiomatic rewriting, de-obfuscation,
-and modular refactoring.
-Target programs are sourced from high-profile supply-chain attacks, 
-online repositories, programming competitions, and real-world software projects.
-\sys produces high-quality outputs that satisfy goals in all but two cases,
-even on instances where a state-of-the-art LLM fails to do so.
+and modular refactoring showing strong results, even on tasks where state-of-the-art LLMs fail.
 \end{abstract}
 \maketitle
 
@@ -290,15 +283,15 @@ Here, the goal is to regenerate a semantically equivalent version
 of \texttt{flatmap-stream} in Haskell, to enable integration with a
 Haskell-based pipeline or facilitate formal reasoning.
 
-\begin{wrapfigure}[3]{r}{.7\columnwidth}
+\begin{wrapfigure}[4]{r}{.7\columnwidth}
 % \vspace{-10pt}
 \begin{minted}{prolog}
 graph(p_, I, O) :- graph(p, I, O).
 language(p_, haskell).
 \end{minted}
 \end{wrapfigure}
-The query requests preservation of I/O behavior and translation to Haskell. The
-logic engine deduces that extracting I/O traces and the function signature is
+The query asks \sys to preserve I/O behavior and translate the input program to Haskell.
+The logic engine deduces that extracting I/O traces and the function signature is
 sufficient; the knowledge base automatically associates the target language
 \texttt{Haskell} with purity.
 \sys transforms each extracted I/O example into an equivalent one in Haskell (\eg 
@@ -540,8 +533,9 @@ len(p_, N) :- len(p, N_), N = N_ + 1.
 \begin{listing}
 \begin{minted}{prolog}
 #minimize{C : cost(E,C)}.
+#maximize{C : cost(E,C)}.
 \end{minted}
-\caption{An optimization directive.}
+\caption{Examples of optimization directives. Note that this differs from \sys's \texttt{\#min} or \texttt{\#max} directives, which is used to direct the synthesizer to minimize a property of the program but has no effect on the produced answer set.}
 \label{lst:optimization}
 \end{listing}
 
@@ -1232,14 +1226,15 @@ safeguards and responsible disclosure practices towards ethical program regenera
 
 \section{Evaluation Samples}
 This section provides a selection of samples from the evaluation of \sys.
-These instances provide some interesting insights into the capabilities of \sys, the challenges it faces.
-Some examples also feature constrasts between \sys and a naive LLM-based approach.
+These instances provide some interesting insights into the capabilities of \sys and its shortcomings.
+The samples also provide concrete comparison between \sys and a naive LLM-based approach.
 
 \heading{Left Pad}
 This regeneration task involves regenerating a
 function that pads a string with a given character on the left side until it
 reaches a specified length.
-\begin{wrapfigure}[4]{r}{0.4\columnwidth}
+
+\begin{wrapfigure}[5]{r}{0.4\columnwidth}
 \begin{minted}{prolog}
 graph(p_, I, O) :-
 graph(p, I, O).
@@ -1408,14 +1403,15 @@ float Q_rsqrt(float number) {
 \heading{String Compare}
 The goal of this regeneration task is to regenerate a given
 program to remove that potential security vulnerabilities or malicious behavior.
-\begin{wrapfigure}[3]{r}{0.7\columnwidth}
+
+\begin{wrapfigure}[4]{r}{0.7\columnwidth}
 \begin{minted}{prolog}
 pure(p_).
 graph(p_, I, O) :- graph(p, I, O).
 \end{minted}
 \end{wrapfigure}
 The query for \sys is shown on the right.
-\Cref{lst:string_compare_original} shows the original string compare function, which writes to a file if the
+\Cref{lst:string-compare-original} shows the original string compare function, which writes to a file if the
 second argument is a fixed secret value.
 The same attack can be found \cref{lst:string_compare_fool}, which the result
 of transforming the original source code using an LLM in order to make 
@@ -1437,11 +1433,11 @@ module.exports = (a, b) => {
   return a.localeCompare(b);
 }
 \end{minted}
+  \label{lst:string-compare-original}
   \caption{The original string compare function, which writes to a file if the
   second argument is a fixed secret value~\cite{copeland2019frightening}.
   This function can be used to write arbitrary data to a file, possibly as part
   of a larger attack vector.}
-  \label{lst:string_compare_original}
 \end{listing}
 
 \begin{listing}[p]
