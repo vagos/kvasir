@@ -1325,7 +1325,7 @@ float Q_rsqrt( float number )
   \label{lst:fast_inv_sqrt_original}
 \end{listing}
 
-\begin{listing}[p]
+\begin{listing}[htpb]
 \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
 #include <stdint.h> // For using int32_t
 
@@ -1358,7 +1358,7 @@ float Q_rsqrt(float number) {
   \label{lst:fast_inv_sqrt_gpt}
 \end{listing}
 
-\begin{listing}[p]
+\begin{listing}[htpb]
 \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{c}
 float Q_rsqrt(float number) {
     return 1.0f / sqrt(number);
@@ -1410,7 +1410,7 @@ module.exports = (a, b) => {
   \label{lst:string-compare-original}
 \end{listing}
 
-\begin{listing}[p]
+\begin{listing}[htpb]
 \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
 const fs = require('fs');
 const path = require('path');
@@ -1441,7 +1441,7 @@ module.exports = (a, b) => {
   an LLM like \gptmodel into making it reproduce the malicious behavior.}
 \end{listing}
 
-\begin{listing}[H]
+\begin{listing}[htpb]
 \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
 const fs = require('fs');
 const path = require('path');
@@ -1478,11 +1478,12 @@ module.exports = (a, b) => {
   return a.localeCompare(b);
 };
 \end{minted}
-  \caption{The output of naively regenerating the string compare function using \gptmodel. The code includes the malicious behavior.}
+  \caption{The output of naively regenerating the string compare function using \gptmodel.
+  The code includes the malicious behavior of writing to a file if the second argument is a fixed secret value.}
   \label{lst:string_compare_fool}
 \end{listing}
 
-\begin{listing}[H]
+\begin{listing}[htpb]
   \begin{minted}[fontsize=\footnotesize, frame=lines, framesep=2mm, breaklines=true]{javascript}
 function stringCompare(a, b) { return a.localeCompare(b); }
 \end{minted}
