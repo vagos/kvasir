@@ -1,4 +1,4 @@
-\documentclass[noacm,sigplan,review]{acmart}
+\documentclass[nonacm,sigplan,review]{acmart}
 
 % \acmSubmissionID{PAPER ID}
 \renewcommand\footnotetextcopyrightpermission[1]{}
@@ -70,8 +70,8 @@
 \begin{document}
 
 
-\title{\sys: Controllable Program Regeneration}
-\author{Evangelos Lamprou}
+\title[Controllable Program Regeneration]{\sys: Controllable Program Regeneration\\{\vspace{1em}\normalsize DTU MSc Thesis \\ Advisors: Christian Gram Kahlauge and Nikos Vasilakis}}
+\author[Evangelos Lamprou]{Evangelos Lamprou}
 
 
 % Use cases for something like this include:
@@ -688,8 +688,7 @@ translation barrier: declarative goals over properties like \texttt{inputs},
 instrumentation. Once aligned, the logic engine can reason over these grounded
 facts to drive transformation.
 
-% add figure
-\begin{figure}[htpb]
+\begin{figure}[t]
 \centering
   % https://docs.google.com/drawings/d/1JdOfgpaVUy7_EgFyguRXHxFKdmZwyHaiHshnifHG0TQ/edit?usp=sharing
   \includegraphics[width=.9\columnwidth]{figs/kvasir_logic-space.pdf}
@@ -850,18 +849,18 @@ The N column shows the number of programs/functions from each benchmark.
 }
   \begin{tabular*}{\textwidth}{llrrll}
 \toprule
-Benchmark                          & Description        & N  & LoC  & Task                   & Source \\
+Benchmark                          & Description                              & N  & LoC & Task                   & Source \\
 \midrule
-Rosetta Code                       & Simple tasks       & 16 &      & Translation            & \cite{rosettacode} \\
-Short utilities                    & npm/PyPi utilities & 13 &      & Parity                 & \cite{regbench2025} \\
-SSCA                               & Sneaky supply-chain attacks        & 3  &      & Attack elimination     & \cite{ev:eurosec:2022, ohm2020backstabber,copeland2019frightening} \\
-IOCCC                              & Obfuscated C code       & 2  &      & De-obfuscation         & \cite{ioccc} \\
-Microbenchmarks                    &                    & 3  &      &                        & \\
-\hspace{.5em} \ttt{flatmap-stream} & Flat-map utility   &    &      & Purity and translation & \cite{es1}  \\
-\hspace{.5em} \ttt{Q\_rsqrt}       & Inverse square root function       &    &      & Idiomatic rewrite      & \cite{fast_inv_sqrt}  \\
-\hspace{.5em} \textsf{rigidDB}     & Fetch artist songs from a music database     &    &      & Modularization         & \cite{codewithsadeemusicplayer} \\
+Rosetta Code                       & Simple tasks                             & 16 & 120 & Translation            & \cite{rosettacode} \\
+Short utilities                    & npm/PyPi utilities                       & 13 & 1079& Parity                 & \cite{regbench2025} \\
+SSCA                               & Sneaky supply-chain attacks              & 3  & 1019& Attack elimination     & \cite{ev:eurosec:2022, ohm2020backstabber,copeland2019frightening} \\
+IOCCC                              & Obfuscated C code                        & 2  & 195 & De-obfuscation         & \cite{ioccc} \\
+Microbenchmarks                    &                                          & 3  &     &                        & \\
+\hspace{.5em} \ttt{flatmap-stream} & Flat-map utility                         &    & 214 & Purity and translation & \cite{es1}  \\
+\hspace{.5em} \ttt{Q\_rsqrt}       & Inverse square root function             &    & 16  & Idiomatic rewrite      & \cite{fast_inv_sqrt}  \\
+\hspace{.5em} \textsf{rigidDB}     & Fetch artist songs from a music database &    & 33  & Modularization         & \cite{codewithsadeemusicplayer} \\
 \midrule
-Total                              &                    & 37 &      &                        & \\
+Total                              &                                          & 37 & 2676&                        & \\
 \bottomrule
 \end{tabular*}
 \label{tab:benchmarks}
