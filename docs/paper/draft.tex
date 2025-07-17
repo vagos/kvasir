@@ -46,7 +46,7 @@
 \def\gptmodel{{GPT-4o}\xspace}
 
 \newcommand{\todo}[1]{\hl{\textbf{TODO:} #1}\xspace}
-\newcommand{\sys}{{\scshape Kv{\textalpha}sir}\xspace}
+\newcommand{\sys}{{\scshape Kv{$\alpha$}sir}\xspace}
 \newcommand{\rf}[1]{\ref{#1}}
 \newcommand{\sx}[1]{(\S\ref{#1})}
 \newcommand{\cf}[1]{(\emph{Cf}.\S\ref{#1})}
@@ -70,8 +70,8 @@
 \begin{document}
 
 
-\title[Controllable Program Regeneration]{\sys: Controllable Program Regeneration\\{\vspace{1em}\normalsize DTU MSc Thesis \\ Advisors: Christian Gram Kahlauge and Nikos Vasilakis}}
-\author[Evangelos Lamprou]{Evangelos Lamprou}
+\title[Property-Guided Program Regeneration]{\sys: Property-Guided Program Regeneration\\{\vspace{1em}\large Technical University of Denmark, MSc Thesis {\\\vspace{-1em}} Advisors: Christian Gram Kahlauge and Nikos Vasilakis}}
+\author{Evangelos Lamprou}
 
 
 % Use cases for something like this include:
@@ -1175,7 +1175,7 @@ transformations, such as serializing parallel programs, could serve as
 a debugging or oracle mechanism in complex system settings.
 
 \heading{Formal foundations and alternative implementations}
-The transformation semantics introduced by \sys are grounded in logic
+The transformation language semantics introduced by \sys are grounded in logic
 programming and inherit properties like compositionality.
 A more formal treatment of the \sys
 transformation language could enable rigorous reasoning about transformation

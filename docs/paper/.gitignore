@@ -4,6 +4,8 @@
 *.log
 *.out
 *.fls
+*.xcp
+*.xdv
 *.fdb_latexmk
 draft.pdf
 _minted-draft
