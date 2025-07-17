@@ -185,7 +185,7 @@ constraint-guided regeneration module.
 \heading{Contributions}
 This work's contributions are:
 \begin{itemize}
-  \item A property-aware transformation framework, combining logic-based reasoning, and LLM-assisted program synthesis~(\cref{sec:design});
+  \item A program transformation framework the combines logic-based reasoning with LLM-assisted program synthesis~(\cref{sec:design});
  \item A declarative interface and accompanying DSL for program transformation, allowing users to express semantic goals as logical queries over properties of the regenerated program~(\cref{sec:dsl});
  \item A verification architecture that checks synthesized programs against the specified properties, providing feedback for refinement~(\cref{sec:verification});
  \item An empirical evaluation demonstrating \sys's effectiveness and scalability across transformation scenarios~(\cref{sec:evaluation}).
@@ -367,20 +367,20 @@ function getAlbumsByArtist(artist) {
   return rows.map(row => row.album); }
 \end{minted}
 
+\begin{wrapfigure}[6]{r}{.7\columnwidth}
+  \begin{minted}{prolog}
+db('music.db').func(f1).func(f2).
+trc_sql(p_,I,T) :-
+   trc_sql(p,I,T), graph(p,I,_).
+graph(call(f2,call(f1),I),I,O):-
+                   graph(p,I,O).
+\end{minted}
+\end{wrapfigure}
 Having the database initialization being in the same function as 
 the database access has architectural and performance implications.
 In addition, there exist systems that can benefit from further decomposition
 of an application towards automatic distribution, parallelization or security~\cite{Towards_Modern_Ghemaw_2023, vasilakis2019ignis, vasilakis2018breakapp}.
-\begin{wrapfigure}[6]{r}{.8\columnwidth}
-  \begin{minted}{prolog}
-db('music.db'). func(f1). func(f2).
-trace_sql(p_, I, T) :- trace_sql(p, I, T),
-                       graph(p, I, _).
-graph(call(f2, call(f1), I), I, O) :-
-                       graph(p, I, O).
-\end{minted}
-\end{wrapfigure}
-\sys, given the query to the right, will 
+\sys, given the query to the above, will 
 generate program that consists of two functions,
 whose composition is equivalent to the original program, and feature 
 the same I/O and trace properties (a trace here being the sequence of SQL 
