@@ -14,7 +14,7 @@
 \usepackage{multirow}
 \usepackage{csvsimple}
 \usepackage{balance}
-\usepackage{minted}
+\usepackage[newfloat]{minted}
 \usepackage{xcolor}
 \usepackage{nicefrac}
 \usepackage{siunitx}
@@ -1433,11 +1433,11 @@ module.exports = (a, b) => {
   return a.localeCompare(b);
 }
 \end{minted}
-  \label{lst:string-compare-original}
   \caption{The original string compare function, which writes to a file if the
   second argument is a fixed secret value~\cite{copeland2019frightening}.
   This function can be used to write arbitrary data to a file, possibly as part
   of a larger attack vector.}
+  \label{lst:string-compare-original}
 \end{listing}
 
 \begin{listing}[p]
@@ -1521,5 +1521,5 @@ function stringCompare(a, b) { return a.localeCompare(b); }
   \label{lst:string_compare_sys}
 \end{listing}
 
-
+\cleardoublepage
 \end{document}
