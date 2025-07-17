@@ -1,6 +1,5 @@
 \documentclass[nonacm,sigplan,review]{acmart}
 
-% \acmSubmissionID{PAPER ID}
 \renewcommand\footnotetextcopyrightpermission[1]{}
 \settopmatter{printfolios=false,printacmref=false}
 
@@ -89,7 +88,7 @@
   Large language models (LLMs) have shown promise in automating such tasks,
   but their outputs are shaped by surface cues, lack
   semantic guarantees, and their usage often boil down to brittle prompting strategies.
-This paper presents \sys, a system for controllable program regeneration that
+This work presents \sys, a system for controllable program regeneration that
   combines declarative property constraints with LLM-guided synthesis. Unlike
   prior approaches, \sys treats the input program as an untrusted artifact and
   explicitly projects it into a minimal set of verifiable properties, such as
@@ -149,7 +148,7 @@ and lack mechanisms for enforcing precise behavioral properties on the generated
 As a result, developers must prompt and steer them through brittle heuristics or manual trial-and-error, leading to workflows that are difficult to audit, integrate, or systematically reason about.
 Bridging this gap calls for a declarative interface---one that allows developers to specify explicit semantic constraints and transformation goals, and to reason about their satisfaction in a principled way.
 
-This paper present \sys, a system for \emph{property-guided program regeneration}.
+I present \sys, a system for \emph{property-guided program regeneration}.
 \sys allows users
 to express transformation goals declaratively, as logical constraints over
 program properties such as input/output behavior, side-effect freedom, target
@@ -184,7 +183,7 @@ constraint-guided regeneration module.
 
 % TODO: Add section references
 \heading{Contributions}
-The paper's contributions are:
+This work's contributions are:
 \begin{itemize}
   \item A property-aware transformation framework, combining logic-based reasoning, and LLM-assisted program synthesis~(\cref{sec:design});
  \item A declarative interface and accompanying DSL for program transformation, allowing users to express semantic goals as logical queries over properties of the regenerated program~(\cref{sec:dsl});
@@ -998,35 +997,6 @@ of developer tests to verify the correctness of the regeneration.
 
 \section{Related Work}
 
-% \begin{table*}
-%   \centering
-%   \caption{
-%     \textbf{Comparison of transformation paradigms.}
-%     \sys combines symbolic planning, property reasoning, and guided regeneration.
-%   }
-%   \label{tbl:comparison}
-%     \begin{tabular}{lcccccccc}
-% \toprule
-% \textbf{Approach} & 
-% \rotatebox{90}{\textbf{Uses Input}} &
-% \rotatebox{90}{\textbf{Decl. Goals}} &
-% \rotatebox{90}{\textbf{Neg. Const.}} &
-% \rotatebox{90}{\textbf{Opt. Support}} &
-% \rotatebox{90}{\textbf{Modular}} &
-% \rotatebox{90}{\textbf{Explainable}} &
-% \rotatebox{90}{\textbf{Scoped}} & 
-% Source \\
-% \midrule
-% Classical Synthesis & $\squad$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & \cite{alur2013sygus, solar2008sketch} \\
-% Refactoring Tools & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squadfillhr$ & $\squadfillhr$ & \cite{} \\
-% PBE Synthesis & $\squad$ & $\squadfill$ & $\squad$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & \cite{} \\
-% CEG Synthesis & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squad$ & $\squad$ & $\squad$ & \cite{solar2008sketch} \\
-% Pure LLMs & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & $\squad$ & \cite{} \\
-% \textbf{\sys} & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & $\squadfill$ & (this paper) \\
-% \bottomrule
-% \end{tabular}
-% \end{table*}
-
 \heading{Program synthesis}
 Program synthesis research spans a rich space of techniques.
 Classical techniques emphasize correctness and
@@ -1145,7 +1115,7 @@ supports Python, JavaScript, Haskell, and C.
 % block in broader refactoring, auditing, or hardening pipelines.
 
 \section{Conclusion}
-This paper introduced \sys, a system for property-guided program regeneration
+I introduced \sys, a system for property-guided program regeneration
 that bridges the flexibility of large language models with the precision of
 logic-driven planning.
 By allowing developers to declaratively specify
