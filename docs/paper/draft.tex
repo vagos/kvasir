@@ -1051,10 +1051,22 @@ representation in verification and synthesis pipelines.
 \sys uses logic programming as its query interface and its planning back-end.
 For each transformation task, \sys formulates the property-satisfaction problem as a logic query and uses an ASP solver to synthesize a feasible transformation plans.
 
-\section{Discussion and Limitations}
+\section{Discussion}
 \label{sec:discussion}
 
-\sys's design comes with inherent trade-offs.
+\begin{figure}[t]
+  % https://docs.google.com/drawings/d/1ozMu2B0RUhyLWC_rM6GLBrioov80-M06CBqYRAhCk18/edit
+  \includegraphics[width=.8\columnwidth]{figs/kvasir_projection.pdf}
+  \caption{\textbf{Regeneration from property projection.}
+  An alternative view of \sys is that instead of transforming source code directly, it projects the original
+  program into a set of verifiable properties---such as input/output
+  examples, system call traces, \etc.
+  It then regenerates it and turns it back into source code.}
+  \label{fig:projection}
+\end{figure}
+
+This section discusses \sys's inherent trade-offs and possibilities for future work.
+
 
 \heading{Targeted regeneration}
 \sys is best used as a surgical tool for targeted regeneration tasks, not for whole-program synthesis.
@@ -1073,7 +1085,7 @@ This means that correctness is only as strong as the property definitions and as
 In the presence of underspecified or unverifiable goals,
 regenerated code
 may exhibit unanticipated behavior,
-even if it passes all checks. 
+even if it passes all checks.
 
 \heading{LLM limitations}
 The generative synthesis phase
@@ -1099,32 +1111,6 @@ is relevant to overcoming this limitation.
 The current \sys prototype
 supports Python, JavaScript, Haskell, and C. 
 
-% Overall, \sys offers a flexible framework for controlled regeneration, but
-% its effectiveness depends on the specificity of goals, the availability of
-% property logic, and the scope of the transformation task. Its design favors
-% composability and clarity over full automation, aiming to serve as a building
-% block in broader refactoring, auditing, or hardening pipelines.
-
-\section{Conclusion}
-This work introduced \sys, a system for property-guided program regeneration
-that bridges the flexibility of large language models with the precision of
-logic-driven planning.
-By allowing developers to declaratively specify
-transformation goals as logical constraints, \sys elevates LLM-assisted program
-transformations to a controllable, interpretable, and iterative synthesis-verification
-process.
-Evaluation demonstrates that \sys produces high-quality regenerations
-across diverse tasks, outperforming naive prompting baselines in correctness,
-controllability, and resilience to adversarial or obfuscated inputs.
-
-\sys opens the door to a new class of synthesis tools that combine symbolic
-reasoning and neural generation under a unified, extensible framework.
-As program synthesis systems grow increasingly reliant on LLMs, I believe the
-future lies in harnessing their generative power within a framework that retains
-correctness, explainability, and developer control as first-class citizens.
-
-Here, I outline possible future directions for \sys and its successors:
-
 \heading{Expanding the transformation space}
 Future extensions to \sys may incorporate richer classes of properties, such as
 temporal logic and dataflow
@@ -1146,6 +1132,14 @@ over transformations would allow alternative \sys backends to be developed.
 Integrating techniques from
 counterfactual reasoning~\cite{Cabalar_2020} could further enhance \sys by
 explaining synthesis failures and clarifying conflicting property constraints.
+
+\heading{Idea of program projection}
+\sys can be viewed as a projection system, as shown in \cref{fig:projection}.
+\sys projects a program into an abstract space of properties, 
+then, it performs transformations within that space (the input query),
+and finally, it regenerates this projection back into a concrete program.
+The idea of casting programs into a high-dimensioanl space has been studied before~\cite{ben-nun2018neural,alon2019code2vec,ellis2020dreamcoder,nye2021platypus},
+but \sys's approach, from this perspective, might offer interesting insights.
 
 \heading{Regeneration as a system-building primitive}
 Beyond isolated transformations, \sys can serve as a core building block for
@@ -1179,6 +1173,32 @@ systems into equivalent ones with more permissive licensing
 could challenge existing norms and regulations. 
 It is important to consider
 safeguards and responsible disclosure practices towards ethical program regeneration.
+
+
+
+% Overall, \sys offers a flexible framework for controlled regeneration, but
+% its effectiveness depends on the specificity of goals, the availability of
+% property logic, and the scope of the transformation task. Its design favors
+% composability and clarity over full automation, aiming to serve as a building
+% block in broader refactoring, auditing, or hardening pipelines.
+
+\section{Conclusion}
+This work introduced \sys, a system for property-guided program regeneration
+that bridges the flexibility of large language models with the precision of
+logic-driven planning.
+By allowing developers to declaratively specify
+transformation goals as logical constraints, \sys elevates LLM-assisted program
+transformations to a controllable, interpretable, and iterative synthesis-verification
+process.
+Evaluation demonstrates that \sys produces high-quality regenerations
+across diverse tasks, outperforming naive prompting baselines in correctness,
+controllability, and resilience to adversarial or obfuscated inputs.
+
+\sys opens the door to a new class of synthesis tools that combine symbolic
+reasoning and neural generation under a unified, extensible framework.
+As program synthesis systems grow increasingly reliant on LLMs, I believe the
+future lies in harnessing their generative power within a framework that retains
+correctness, explainability, and developer control as first-class citizens.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
