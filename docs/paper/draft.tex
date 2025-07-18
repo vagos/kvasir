@@ -87,14 +87,14 @@
   languages, or refactoring opaque legacy code---are brittle and time-consuming.
   Large language models (LLMs) have shown promise in automating such tasks,
   but their outputs are shaped by surface cues, lack
-  semantic guarantees, and their usage often boil down to brittle prompting strategies.
+  semantic guarantees, and their usage often boil down to fragile prompting strategies.
 This work presents \sys, a system for controllable program regeneration that
   combines declarative property constraints with LLM-guided synthesis. Unlike
   prior approaches, \sys treats the input program as an untrusted artifact and
   explicitly projects it into a minimal set of verifiable properties, such as
   input/output behavior, execution traces, and API signatures. These properties
-  serve as constraints during synthesis and are checked post hoc to ensure
-  correctness.
+  serve as constraints during synthesis, are checked post hoc to ensure
+  correctness, and can be mutated to allow for flexible program transformation through regeneration.
 \sys is evaluated on a diverse set of program transformation tasks
 including security hardening, language translation, idiomatic rewriting, de-obfuscation,
 and modular refactoring showing strong results, even on tasks where state-of-the-art LLMs fail.
@@ -148,7 +148,7 @@ and lack mechanisms for enforcing precise behavioral properties on the generated
 As a result, developers must prompt and steer them through brittle heuristics or manual trial-and-error, leading to workflows that are difficult to audit, integrate, or systematically reason about.
 Bridging this gap calls for a declarative interface---one that allows developers to specify explicit semantic constraints and transformation goals, and to reason about their satisfaction in a principled way.
 
-I present \sys, a system for \emph{property-guided program regeneration}.
+This work presents \sys, a system for \emph{property-guided program regeneration}.
 \sys allows users
 to express transformation goals declaratively, as logical constraints over
 program properties such as input/output behavior, side-effect freedom, target
@@ -185,7 +185,7 @@ constraint-guided regeneration module.
 \heading{Contributions}
 This work's contributions are:
 \begin{itemize}
-  \item A program transformation framework the combines logic-based reasoning with LLM-assisted program synthesis~(\cref{sec:design});
+ \item A program transformation framework the combines logic-based reasoning with LLM-assisted program synthesis~(\cref{sec:design});
  \item A declarative interface and accompanying DSL for program transformation, allowing users to express semantic goals as logical queries over properties of the regenerated program~(\cref{sec:dsl});
  \item A verification architecture that checks synthesized programs against the specified properties, providing feedback for refinement~(\cref{sec:verification});
  \item An empirical evaluation demonstrating \sys's effectiveness and scalability across transformation scenarios~(\cref{sec:evaluation}).
@@ -477,7 +477,7 @@ They form the basis of both planning and verification.
 All aspects of the symbolic representation are expressed as answer-set programming (ASP) facts and rules (an example program is shown in \cref{lst:logic-example})~\cite{Eiter_2009}.
 
 \heading{Answer Set Programming}
-Answer Set Programming (ASP) \cite{Gelfond_2000, Eiter_2009} is a problem-solving paradigm with roots in logic programming and non-monotonic reasoning.
+ASP \cite{Gelfond_2000, Eiter_2009} is a problem-solving paradigm with roots in logic programming and non-monotonic reasoning.
 The programming 
 model of ASP is one where the programmer models
 the problem domain, with the solution being handled by a solver program.
@@ -751,8 +751,9 @@ Second, candidate outputs are verified post hoc against the enforced properties~
 \section{Property Verification and Feedback Loop}
 \label{sec:verification}
 
-To validate that a regenerated program satisfies the intended goals, \sys includes an explicit verification phase that checks whether the output adheres to the enforced properties in the synthesis plan. 
-Verification accepts only programs that meet the plan's constraints and provides feedback for refining or retrying those that do not.
+\sys includes an explicit verification phase that checks whether the output adheres to the enforced properties in the synthesis plan. 
+Verification accepts only programs that meet the plan's constraints and
+provides feedback for refining or retrying those that do not.
 
 \heading{Verification as property checking}
 After synthesis, \sys invokes a set of property-specific checkers.
@@ -767,14 +768,19 @@ Examples include:
 \begin{itemize}
   \item For $\texttt{no\_network}(f)$, the checker confirms the absence of known network APIs or imports.
   \item For $\texttt{signature}(f)$, the checker matches the regenerated function's name, parameters, and arity against the extracted signature.
-  \item For $\texttt{pure}(f)$, the checker examines control flow and side-effecting operations to detect possible violations.
 \end{itemize}
 
-Checkers are modular and contributed by plugins. Their combined results determine whether a candidate is considered valid under the current plan.
+Checkers are modular and contributed by plugins.
+Their combined results determine whether a candidate is considered valid under the current plan.
 For minimization and maximization goals, the verification phase uses the less-than or greater-than operators as are defined internally by the plugin verifying the given property.
 Verification in this case checks if the property's value has decreased or increased compared 
 to the previous regeneration attempt.
 If the value remains unchanged for two consecutive attempts, its considered satisfied.
+Its important that certain properties that are not easily verifiable, such as \ttt{pure}, 
+do not correspond to a specific verifier, but rather influence what kind of propoerties can be extracted 
+otherwise to make sure they are not violated during regeneration.
+For this example, a system call trace of the program will not be provided to the LLM instance, 
+as that could encode side-effects present in the original program.
 
 \heading{Failure-driven refinement}
 When a candidate fails verification, \sys treats this as a feedback signal. Instead of discarding the regeneration attempt wholesale, the system uses the failure to revise or re-execute the synthesis phase.
@@ -799,21 +805,22 @@ This model supports application in real-world codebases, where partial improveme
 \section{Evaluation}
 \label{sec:evaluation}
 
-The \sys evaluation is along three axes:
+\sys's evaluation aims to answer two key questions: 
 
 \begin{itemize}
   \item[\textbf{Q1}] \textbf{Correctness and Regeneration Quality}: Does \sys preserve program behavior and produce high-quality programs?
   \item[\textbf{Q2}] \textbf{LLM Baseline}: How does \sys compare to naively prompting a large language model?
-  \item[\textbf{Q3}] \textbf{Planning Efficiency \& Precision}: Does minimizing extracted properties help regeneration succeed faster and more reliably?
 \end{itemize}
 
-\section{Benchmarks \& Methodology}
+\subsection{Benchmarks \& Methodology}
 
 The \sys evaluation comprises of six benchmark suites, summarized in \cref{tab:benchmarks}.
 Each task consists of an input program, a \sys query expressing desired
 properties, and a test suite or functional oracle.
 Each benchmark is executed three times. A regeneration is considered overall successful 
 if it is correct, satisfies the query, and passes all tests all three times.
+The specific benchmark programs were selected based on a combination of their ubiquity in programming practise, their
+popularity in programming culture, and their tractability given the implemented \sys plugins.
 The Rosetta Code~\cite{rosettacode} benchmarks include four programming tasks written in four different
 languages each (Python, JavaScript, C, and Haskell). 
 These include classic programs that do not require any language-specific features to implement.
@@ -903,6 +910,7 @@ For the IOCCC benchmarks, \sys regenerates the \ttt{adder} program, which is a s
 it also regenerates \ttt{mersenne} in regards that it correctly performs a naive Mersenne primality testing, but it does not follow the non-obvious output scheme of the original program, which returns a non-zero hexadecimal number when $2^p - 1$ ($p$ being the input number) is not prime.
 For the microbenchmarks, \sys correctly regenerates the \ttt{flatmap-stream} program, producing a safe Haskell version that is idiomatic and preserves the original functionality.
 However, this version does not match exactly the semantics of the original one, as it operates over infinitely nested lists, rather than only one level deep ones.
+Thus, a $.5$ score in correctness is given.
 The \ttt{Q\_rsqrt} program includes the obvious, idiomatic computation of the inverse square root ($1/\sqrt{x}$) rather than the original bit-level manipulation.
 Finally, \sys successfully decomposes the \ttt{rigidDB} program into two
 functions, \ttt{setupDatabase} and \ttt{getAlbumsByArtist}, which is a
@@ -960,36 +968,8 @@ and names them \ttt{setupDatabase} and \ttt{getAlbumsByArtist}.
 
 \sys consistently outperforms a \gptmodel baseline,
 overcoming the inherent weaknesses of a purely prompt-based approach.
+In-depth examples of interesting evaluation results are discussed in \cref{sec:eval-samples}.
 
-\subsection{Q3: Planning Efficiency \& Precision}
-
-To evaluate the impact of \sys's property planning, we compare it against a \gptmodel baseline that performs prompt-only rewriting without explicit access to guiding properties.
-
-We consider two criteria for each regenerated program:
-
-\begin{itemize}
-  \item \textbf{Wanted Property Satisfaction:} Does the output program satisfy all positive properties declared in the query (\eg \texttt{pure}, \texttt{language(haskell)})?
-  \item \textbf{Unwanted Property Avoidance:} Does the output avoid introducing disallowed behaviors (\eg side effects, global state, unsupported language features)?
-\end{itemize}
-
-\sys consistently satisfies more of the declared properties while avoiding
-unintended behaviors.
-Following is a qualitative analysis of the results.
-In the \texttt{flatmap-stream} benchmark,
-\gptmodel often inclduded malicious side effects when the code appeared innocuous,
-whereas \sys generated pure rewrites by treating the source as
-untrusted and grounding regeneration in I/O behavior alone.
-Across all benchmarks, the planning step completes in under 50ms on average.
-Similarly, in the \ttt{Q\_rsqrt} benchmark, \gptmodel often produces bit-level
-manipulations that are not idiomatic in Haskell, while \sys generates a simple
-and idiomatic Haskell function that computes the inverse square root.
-This is guided by the fact the \sys extracts and provides to its backend model only the function signature 
-and length of the program, which it minimizes, without including the original source code,
-which as shown in the experimental results makes the model over-fit its regeneration to it.
-\sys's I/O pair extraction also provides confidence that 
-the regenerated program has the same client-visible behavior as the original one, while 
-prompting a model like \gptmodel would always require manual inspection or the presence 
-of developer tests to verify the correctness of the regeneration.
 
 % These results support the claim that \sys's planning logic---driven by explicit
 % property extraction and knowledge-base reasoning---yields safer and more
@@ -1036,7 +1016,7 @@ properties such as program behaviors and architectural goals, expressed declarat
 \heading{Logic programming and constraint solving}
 Logic programming has long served as a foundation for reasoning in programming
 tools, offering a declarative model for expressing properties and constraints.
-Answer Set Programming (ASP), in particular, provides a rich framework for
+ASP, in particular, provides a rich framework for
 expressing defaults, exceptions, and optimization via stable model semantics
 \cite{Gelfond_2000, Gelfond_2002, Eiter_2009}. 
 ASP has been used for
@@ -1115,7 +1095,7 @@ supports Python, JavaScript, Haskell, and C.
 % block in broader refactoring, auditing, or hardening pipelines.
 
 \section{Conclusion}
-I introduced \sys, a system for property-guided program regeneration
+This work introduced \sys, a system for property-guided program regeneration
 that bridges the flexibility of large language models with the precision of
 logic-driven planning.
 By allowing developers to declaratively specify
@@ -1181,13 +1161,14 @@ analysis---effectively using \sys recursively.
 
 \heading{Ethical and legal considerations}
 While this work has applied \sys exclusively to open-source software, its
-capabilities raise ethical and legal questions. Regenerating
+capabilities raise ethical and legal questions.
+Regenerating
 proprietary software, de-obfuscating binaries, or reimplementing licensed
 systems into equivalent ones with more permissive licensing 
-could challenge existing norms and
-regulations. 
+could challenge existing norms and regulations. 
 It is important to consider
 safeguards and responsible disclosure practices towards ethical program regeneration.
+Solutions to similar problems have been 
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
@@ -1195,6 +1176,7 @@ safeguards and responsible disclosure practices towards ethical program regenera
 \appendix
 
 \section{Evaluation Samples}
+\label{sec:eval-samples}
 This section provides a selection of samples from the evaluation of \sys.
 These instances provide interesting insights into the capabilities of \sys and its shortcomings.
 The samples also provide concrete comparison between \sys and a naive LLM-based approach.
