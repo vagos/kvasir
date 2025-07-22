@@ -223,6 +223,14 @@ language translation,
 idiomaticity,
 and modularity.
 
+A user applying \sys would issue the following commands that 
+take as input a query (\ttt{-q}), an input file parametrized parametrized over its line numbers (\ttt{-i}), and an output file (\ttt{-o}).
+\begin{minted}{shell}
+$ kvasir -q qp.pl -i flatmap.js -o flatmap.hs
+$ kvasir -q qi.pl -i physics.c:10-27 -o physics.c
+$ kvasir -q qm.pl -i app.js:1-30 -o app.js
+\end{minted}
+
 \heading{A compromised javascript library}
 The \ttt{flatmap-stream} library was implicated in a high-profile
 supply-chain attack that exfiltrated Bitcoin credentials~\cite{ev:eurosec:2022}.
@@ -241,7 +249,8 @@ using the insight that the insight that they retain the original library's funct
 while performing a side-effectful attack on-the-side~\cite{harp:ccs:2021}.
 This approach can secure the component even when the attack is highly obfuscated and 
 activates under precise conditions.
-The slightly simplified source code of the compromised library is as follows:
+The slightly simplified source code of the compromised library showing the malicious payload and a final
+line that performs the benign flatmap functionality is shown below:
 \begin{minted}[frame=lines]{js}
 module.exports = function (stream, fn) {
  if (process.env.PRODUCTION) {
@@ -267,7 +276,7 @@ This query requires the regenerated program \ttt{p\_} to exhibit the same I/O be
 but forbids side-effects.
 \sys takes this query and arrives at the set of properties to extract from the
 original program, given its knowledge base and the query.
-This set is $\{\ttt{graph(p, I, O)}, \ttt{inpt(P, I)}, \ttt{fsignt(P, S)}, \ttt{pure(P)}\}$, where
+This set is $\{$\ttt{graph(p, I, O)}, \ttt{inpt(P, I)}, \ttt{fsignt(P, S)}, \ttt{pure(P)}$\}$, where
 \ttt{input(p, I)} means that \sys will use the \ttt{input} plugin extract a set of inputs from the original program
 by providing the program's source code to an LLM instance and asking it to generate a set of inputs;
 \ttt{graph(p, I, O)} extracts the client-observable I/O behavior of the program
@@ -586,6 +595,7 @@ Such axioms allow inferred properties to trigger downstream constraints or synth
 \heading{Compilation to ASP}
 Given a source program written in the \sys query language, the compiler performs a syntactic
 de-sugaring into ASP rules~(\cref{fig:asp-compilation}).
+These transformations yield a groundable ASP program that can be evaluated by the backend ASP solver.
 
 \begin{figure}[t]
 \centering
@@ -600,8 +610,6 @@ de-sugaring into ASP rules~(\cref{fig:asp-compilation}).
 \caption{DSL-to-ASP compilation rules. Ungroundable atoms are wrapped in \ttt{do} to denote candidate actions. Optimization directives are compiled to \ttt{do\_min} and \ttt{do\_max}.}
 \label{fig:asp-compilation}
 \end{figure}
-
-These transformations yield a groundable ASP program that can be evaluated by the backend ASP solver.
 
 % TODO: Show graph showing how properties go from the abstract logic domain to the real domain through a translation barrier
 \heading{Logic and concrete space}
@@ -628,7 +636,7 @@ An equality relationship is one where the predicate's grounded version
 $X$ is the same between the two programs, modulo the program identifier~(\eg, $\ttt{graph}(p, i, o) \equiv \ttt{graph}(p\_, i, o)$).
 Equality is defined differently for each property, and is enforced by the corresponding plugin.
 Similarly, minimization and maximization relationships are defined as
-the concrete property value being less than or greater than the original program's value, respectively.
+the concrete property value being less-than or greater-than the original program's value, respectively.
 Again, the less-than and greater-than operators are defined by the plugin that verifies the property.
 
 % In the current \sys implementation, this translation is one-way,
@@ -674,7 +682,7 @@ through logical terms.
 Collections of logical terms, as seen in
 \cref{lst:terms}, can represent the program and its properties.
 Rules, expressed using
-the \ttt{:-} operator, enable complex reasoning by defining relationships
+the \ttt{:-} operator, define relationships
 between atoms.
 Choice rules, exemplified in \cref{lst:choice}, allow the ASP
 solver to make selections among atoms.
