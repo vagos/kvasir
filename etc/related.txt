@@ -1,1 +1,2 @@
 https://eprint.iacr.org/2020/1586.pdf
+https://www.johndcook.com/blog/2025/07/16/hallucination-cost/
