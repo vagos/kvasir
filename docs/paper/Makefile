@@ -10,7 +10,7 @@ GENPDFS = $(patsubst %.svg,%.pdf,$(SVGFILES))
 BIBFILES = $(wildcard *.bib)
 PDFS = $(addsuffix .pdf,$(TARGETS))
 
-LATEXMK = latexmk
+LATEXMK = latexmk -halt-on-error
 LATEXMK_OPTS = -lualatex -shell-escape
 
 all: $(PDFS)
