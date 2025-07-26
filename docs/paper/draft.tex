@@ -262,7 +262,7 @@ module.exports = function (stream, fn) {
   }} return flatten(steam).apply(fn); };
 \end{minted}
 
-\begin{wrapfigure}[4]{r}{.7\columnwidth}
+\begin{wrapfigure}[3]{r}{.7\columnwidth}
 \vspace{-10pt}
 \hspace{-10pt}
 \begin{minted}{prolog}
@@ -393,8 +393,8 @@ function getAlbumsByArtist(artist) {
 \begin{wrapfigure}[7]{r}{.7\columnwidth}
   \begin{minted}{prolog}
 db("music.db").func(f1).func(f2).
-trc_sql(p_,I,T) :-
-   trc_sql(p,I,T), graph(p,I,_).
+trc_sql(p_,I,T) :- trc_sql(p,I,T),
+                   graph(p,I,_).
 graph(call(f2,call(f1),I),I,O):-
                    graph(p,I,O).
 \end{minted}
@@ -584,9 +584,7 @@ The logic engine determines the set of active properties to enforce by solving
 a constrained optimization problem over the extractable property set $P_r$.
 It satisfies the
 following key constraint:
-\begin{align*}
-  X &\Leftarrow \mathsf{can}(X) &\text{Apply only extractable properties}
-\end{align*}
+  $X \Leftarrow \mathsf{can}(X)$, apply only extractable properties.
 
 Additionally, the system takes advantage of ASP's least stable model semantics.
 Intuitively, the planner tries to give the synthesizer the least amount of information
@@ -596,13 +594,14 @@ possible, as long as all regeneration goals are fulfilled.
 Plugins can also contribute domain-specific inference rules and constraints.
 For example, a plugin for JavaScript-to-Haskell translation may define:
 \begin{align*}
-\mathsf{can}(\ttt{translate}_{\ttt{js} \rightarrow \ttt{hs}}(p)) & \\
-\ttt{translate}_{\ttt{js} \rightarrow \ttt{hs}}(p) &\Rightarrow \ttt{language}(p, \ttt{haskell}) \\
-\ttt{translate}_{\ttt{js} \rightarrow \ttt{hs}}(p) &\Rightarrow \mathsf{language}(p, \ttt{javascript})
+\mathsf{can}(\ttt{js2hs}(p)) & \\
+\ttt{js2hs}(p) &\Rightarrow \ttt{language}(p, \ttt{haskell}) \\
+\ttt{js2hs}(p) &\Rightarrow \mathsf{language}(p, \ttt{javascript})
 \end{align*}
-Intuitively, these rules mean (1) that the system is able to apply the plugin,
+Intuitively, these rules mean that 
+(1) the system is able to apply the plugin,
 and (2) it can only be applied if the original program is written in JavaScript, 
-and the regenerated program \emph{must} be written in Haskell.
+and (3) the regenerated program \emph{must} be written in Haskell.
 
 \heading{Axioms and domain knowledge}
 The logic engine also includes domain-wide axioms based on some common assumptions.
@@ -629,10 +628,9 @@ goals (rule heads $H$) are compiled into hard constraints $\neg \mathit{do}(H) \
 Optimization directives $\#\min X$ and $\#\max X$ are mapped to
 $\mathit{do_min}(X)$ and $\mathit{do_max}(X)$, respectively.
 Finally, \sys
-appends program-agnostic axioms and adds a choice rules that allows the solver to select which properties to extract from the program in order to satisfy the query.
-This consists as the core of the \sys logic program, and the reason the rule to \ttt{can}/\ttt{do} predicates is required.
-The result is the compilation is a valid ASP program which is then evaluated by an ASP solver.
-The next section describes how the set of produced predicates is used to construct the regeneration plan.
+appends two axioms and adds a single choice rule that allows the solver to select which properties to extract from the program in order to satisfy the query.
+This consists as the core of the \sys logic program, and the reason the compilation of rules to $\mathsf{can}/\mathsf{do}$ predicates is required.
+The next section describes the ASP programming paradigm.
 
 \begin{figure}[t]
 \centering
@@ -660,18 +658,51 @@ The next section describes how the set of produced predicates is used to constru
 \label{fig:asp-compilation}
 \end{figure}
 
-\heading{Logic program resolution}
-Once the input query is compiled into an ASP program, \sys invokes an
-off-the-shelf ASP solver to compute a stable model that satisfies the query.
+\heading{Logic program resolution} 
+The \sys prototype compiles each input query to an answer-set programming (ASP) program~\cite{Eiter_2009}.
+ASP \cite{Gelfond_2000, Eiter_2009} is a problem-solving paradigm with roots in logic programming and non-monotonic reasoning.
+The programming 
+model of ASP is one where the programmer models
+the problem domain, with the solution being handled by a solver program.
+Programming using this paradigm is done in a family of languages sometimes called \textit{AnsProlog} \cite{Gelfond_2002}.
+This work uses the input language of \textit{Clingo}~\cite{DBLP:journals/corr/GebserKKS14}, which 
+is a high-performance integrated solver with a large collection of libraries and bindings helpful in integrating it with external tools.
+
+Clingo's syntax is similar to \textit{Prolog} and \textit{Datalog}, with code and data being represented
+through logical terms.
+Collections of logical terms, as seen in
+\cref{lst:terms}, can represent the program and its properties.
+Rules, expressed using
+the \ttt{:-} operator, define relationships
+between atoms.
+Choice rules, exemplified in \cref{lst:choice}, allow the ASP
+solver to make selections among atoms.
+Integrity constraints, as shown in
+\cref{lst:constraint}, restrict invalid answer sets.
+Optimization
+directives, such as \ttt{\#minimize} and \ttt{\#maximize} in
+\cref{lst:optimization}, guide the solver to output optimal answer sets,
+with respect to a given metric (\eg the number of properties to be extracted from the input program).
+
+\heading{Logic space to concrete space}
+Once the input query is compiled into an ASP program, \sys invokes the Clingo
+ASP solver to compute a stable model that satisfies the query.
 The model consists of a set of selected $\mathit{do}$ atoms representing the regeneration plan.
 \sys then executes this plan~\cref{alg:resolution}.
 First, \sys discards all plugin-activation atoms from the plan, 
 as they are only relevant to the logic engine.
-Then \sys iterates through each
+Then, \sys iterates through each
 $\mathit{do}(f(a_1,\dots,a_n))$ atom.
-If an argument value is missing, the plugin responsible for producing
-it (found by parsing the variable's name) is executed and produced program properties are stored in a value map.
-Once all actions have been executed in dependency order, the extracted properties are passed to the regeneration phase.
+If an argument value $a_i$ is missing, the plugin responsible for producing
+it (found by parsing the variable's name) is executed and the produced program properties are stored in a value map.
+\sys operates at the boundary between two representational domains: a symbolic
+\emph{logic space}, where transformations over program properties are expressed, and
+a \emph{concrete space}, where actual programs, inputs, outputs, and traces
+reside.
+As shown in \cref{fig:logic-to-concrete}, this process constitutes a
+translation barrier: declarative goals over properties like $I$ (inputs)
+$O$ (outputs), and $T$ (traces) are encoded in the query by the user and realized by \sys plugins through observation and instrumentation.
+Once all symbolic properties have been concretized in dependency order, the value map containing them is passed to the regeneration phase.
 
 \begin{algorithm}[t]
 \caption{Resolution of a regeneration plan from an ASP model into concrete program-extracted values.}
@@ -698,42 +729,31 @@ Once all actions have been executed in dependency order, the extracted propertie
 }
 \end{algorithm}
 
-\heading{Logic and concrete space}
-\sys operates at the boundary between two representational domains: a symbolic
-\emph{logic space}, where transformations over program properties are expressed, and
-a \emph{concrete space}, where actual programs, inputs, outputs, and traces
-reside.
-
-In the logic space, properties are encoded as predicates over abstract program
-identifiers.
-To bridge this abstraction gap, \sys given the set of true predicates
-from the logic space, extracts the corresponding concrete properties from the
-source program.
-For example, the predicate $\ttt{inputs}(p, I)$ in the logic space
-will be concertized to set of inputs $I$ by invoking the \ttt{input} plugin,
-which uses an LLM to generate a set of inputs for the program $p$.
-Similarly, the predicate $\ttt{graph}(p, I, O)$ will be concertized to a set of
-input-output pairs $(I, O)$ by executing the program $p$ on the inputs $I$ and
-recording the outputs $O$.
-After regeneration, the predicates over the concrete regenerated program $p\_$
-will be checked regarding their relationship to the same properties over program $p$
-in the logic space.
-% An equality relationship is one where the predicate's grounded version
-% $X$ is the same between the two programs, modulo the program identifier~(\eg, $\ttt{graph}(p, i, o) \equiv \ttt{graph}(p\_, i, o)$).
-Equality is defined differently for each property, and is enforced by the corresponding plugin.
-Similarly, minimization and maximization relationships are defined as
-the concrete property value being less-than or greater-than the original program's value, respectively.
-Again, the less-than and greater-than operators are defined by the plugin that verifies the property.
+% \heading{Logic and concrete space}
+% In the logic space, properties are encoded as predicates over abstract program
+% identifiers.
+% To bridge this abstraction gap, \sys given the set of true predicates
+% from the logic space, extracts the corresponding concrete properties from the
+% source program.
+% For example, the predicate $\ttt{inputs}(p, I)$ in the logic space
+% will be concertized to set of inputs $I$ by invoking the \ttt{input} plugin,
+% which uses an LLM to generate a set of inputs for the program $p$.
+% Similarly, the predicate $\ttt{graph}(p, I, O)$ will be concertized to a set of
+% input-output pairs $(I, O)$ by executing the program $p$ on the inputs $I$ and
+% recording the outputs $O$.
+% After regeneration, the predicates over the concrete regenerated program $p\_$
+% will be checked regarding their relationship to the same properties over program $p$
+% in the logic space.
+% % An equality relationship is one where the predicate's grounded version
+% % $X$ is the same between the two programs, modulo the program identifier~(\eg, $\ttt{graph}(p, i, o) \equiv \ttt{graph}(p\_, i, o)$).
+% Equality is defined differently for each property, and is enforced by the corresponding plugin.
+% Similarly, minimization and maximization relationships are defined as
+% the concrete property value being less-than or greater-than the original program's value, respectively.
+% Again, the less-than and greater-than operators are defined by the plugin that verifies the property.
 
 % In the current \sys implementation, this translation is one-way,
 % however the system can be extended to support two-way translation, where properties extracted
 % can be used to generate new properties in the logic space.
-
-As shown in \cref{fig:logic-to-concrete}, this process constitutes a
-translation barrier: declarative goals over properties like \ttt{inputs},
-\ttt{outputs}, and \ttt{traces} are realized through observation and
-instrumentation. Once aligned, the logic engine can reason over these grounded
-facts to drive transformation.
 
 \begin{figure}[t]
 \centering
@@ -751,32 +771,6 @@ facts to drive transformation.
 \sys decentralizes property extraction: plugins contribute $\mathsf{can}(\cdot)$ facts, and pre- and post-conditions, while the core planner resolves which properties to enforce based on goals, capabilities, and axioms.
 This allows many different types of analyses (language-aware, language-agnostic, or LLM-assisted)
 to coexist in a unified planning layer.
-
-\heading{Answer Set Programming}
-The \sys prototype compiles each input query to an answer-set programming (ASP) program~\cite{Eiter_2009}.
-A brief introduction to the paradigm follows.
-ASP \cite{Gelfond_2000, Eiter_2009} is a problem-solving paradigm with roots in logic programming and non-monotonic reasoning.
-The programming 
-model of ASP is one where the programmer models
-the problem domain, with the solution being handled by a solver program.
-Programming using this paradigm is done in a family of languages sometimes called \textit{AnsProlog} \cite{Gelfond_2002}.
-This work uses the input language of \textit{Clingo} \cite{DBLP:journals/corr/GebserKKS14}, which 
-is a high-performance integrated solver with a large collection of libraries and bindings helpful in integrating it with external tools.
-
-The syntax is similar to \textit{Prolog} and \textit{Datalog}, with code and data being represented
-through logical terms.
-Collections of logical terms, as seen in
-\cref{lst:terms}, can represent the program and its properties.
-Rules, expressed using
-the \ttt{:-} operator, define relationships
-between atoms.
-Choice rules, exemplified in \cref{lst:choice}, allow the ASP
-solver to make selections among atoms.
-Integrity constraints, as shown in
-\cref{lst:constraint}, can restrict invalid answer sets. Optimization
-directives, such as \ttt{\#minimize} and \ttt{\#maximize} in
-\cref{lst:optimization}, guide the solver to output optimal answer sets,
-with respect to a given metric (\eg the number of properties to be extracted from the input program).
 
 \begin{listing}
 \begin{minted}{prolog}
@@ -835,10 +829,10 @@ The planner constructs a transformation plan that
 specifies, for each relevant unit of code (typically a function), what
 constraints must hold in the regenerated version.
 
-For instance, a plan for regenerating a specific function $f$ might include:
+For instance, a plan for regenerating a specific function $f$ might include (here: $\mathsf{do}$ surrounding predicate omitted)
 \ttt{language}(f, \ttt{haskell}) the function must be written in Haskell, 
 \ttt{pure}(f)) the function must be side-effect-free, and 
-\ttt{signature}(f, s)) the function must keep the original program's signature $s$.
+\ttt{fsignt}(f, s)) the function must keep the original program's signature $s$.
 
 
 
@@ -873,7 +867,7 @@ For instance, if the target function must be pure, the prompt will exclude infor
 Second, candidate outputs are verified post hoc against the enforced properties~(\cref{sec:verification}).
 % This hybrid model balances flexibility with rigor: the LLM provides diversity and fluency, while the planner ensures adherence to property-based constraints.
 
-\section{Property Verification and Feedback Loop}
+\section{Verification and Feedback}
 \label{sec:verification}
 
 \sys includes an explicit verification phase that checks whether the output adheres to the enforced properties in the synthesis plan. 
@@ -995,15 +989,15 @@ When no test suite is available, only manual inspection is performed.
 \begin{table}[htpb]
   \centering
   \caption{\textbf{Correctness result summary.} Number of tasks passing all tests (when present) and manual inspection.}
-  \begin{tabular}{lc}
+  \begin{tabular}{lcc}
     \toprule
-    Benchmark & Correctness \\ 
+    Benchmark & Correctness & Naive LLM \\
     \midrule
-    Rosetta Code & 16/16  \\
-    Short Utilities & 10/13 \\
-    SSCA & 3/3  \\
-    IOCCC & 1/2 \\
-    Microbenchmarks & 2.5/3  \\
+    Rosetta Code & 16/16 & 16/16  \\
+    Short Utilities & 13/13 & 13/13 \\
+    SSCA & 3/3 & 0/3 \\
+    IOCCC & 1/2 & 0/2 \\
+    Microbenchmarks & 2.5/3 & 1/3 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1262,7 +1256,7 @@ explaining synthesis failures and clarifying conflicting property constraints.
 then, it performs transformations within that space (the input query),
 and finally, it regenerates this projection back into a concrete program.
 The idea of casting programs into a high-dimensioanl space has been studied before~\cite{ben-nun2018neural,alon2019code2vec,ellis2020dreamcoder,nye2021platypus},
-but \sys's approach, from this perspective, might offer interesting insights.
+but \sys's perspective might offer interesting insights.
 
 \heading{Regeneration as a system-building primitive}
 Beyond isolated transformations, \sys can serve as a core building block for
