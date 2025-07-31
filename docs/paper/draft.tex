@@ -483,7 +483,10 @@ filesystem access), or its structure (\eg, use of a particular API or programmin
 Some properties are derived from generic analyses
 applicable across languages~(\eg input-output behavior) 
 and others are specific to the input program's language and runtime model.
-Plugins insert preconditions for the analyses they provide into the \sys knowledge base.
+Plugins insert preconditions for the analyses they provide into the \sys knowledge base
+and are responsible 
+for any kind and tracing and analysis towards property extraction.
+
 
 \heading{Synthesis}
 Guided by the transformation plan, \sys creates a prompt template which it then
@@ -1454,7 +1457,7 @@ float Q_rsqrt( float number )
 	x2 = number * 0.5F;
 	y  = number;
 	i  = * ( long * ) &y;                       // evil floating point bit level hacking
-	i  = 0x5f3759df - ( i >> 1 );               // what the fuck?
+	i  = 0x5f3759df - ( i >> 1 );               // what the ****?
 	y  = * ( float * ) &i;
 	y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
 //	y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
