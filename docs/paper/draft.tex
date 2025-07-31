@@ -232,13 +232,13 @@ $ kvasir -q qi.pl -i physics.c:10-27 -o physics.c
 $ kvasir -q qm.pl -i app.js:1-30 -o app.js
 \end{minted}
 
-\heading{A compromised javascript library}
+\heading{A compromised JavaScript library}
 The \ttt{flatmap-stream} library was implicated in a high-profile
 supply-chain attack that exfiltrated Bitcoin credentials~\cite{ev:eurosec:2022}.
 While the library preserved
 its client-observable behavior, an malicious payload inserted in the module's code by an adversarial developer accessed the filesystem, network, and
 global state under specific conditions.
-Speficially, 
+Specifically, 
 the library would
 (1) detect whether it is running under the dependency tree of a popular bitcoin wallet
 application~\cite{copay} and on the live bitcoin network,
@@ -251,7 +251,7 @@ while performing a side-effectful attack on-the-side~\cite{harp:ccs:2021}.
 This approach can secure the component even when the attack is highly obfuscated and 
 activates under precise conditions.
 The slightly simplified source code of the compromised library showing the malicious payload and a final
-line that performs the benign flatmap functionality is shown below:
+line that performs the benign \ttt{flatmap} functionality is shown below:
 \begin{minted}[frame=lines]{js}
 module.exports = function (stream, fn) {
  if (process.env.PRODUCTION) {
@@ -277,7 +277,7 @@ This query requires the regenerated program \ttt{p\_} to exhibit the same I/O be
 but forbids side-effects.
 \sys takes this query and arrives at the set of properties to extract from the
 original program, given its knowledge base and the query.
-This set is $\{$\ttt{graph(p, I, O)}, \ttt{inpt(P, I)}, \ttt{fsignt(P, S)}, \ttt{pure(P)}$\}$, where
+This set is $\{$\ttt{graph(p, I, O)}, \ttt{fsignt(P, S)}, \ttt{pure(P)}$\}$, where
 \ttt{input(p, I)} means that \sys will use the \ttt{input} plugin extract a set of inputs from the original program
 by providing the program's source code to an LLM instance and asking it to generate a set of inputs;
 \ttt{graph(p, I, O)} extracts the client-observable I/O behavior of the program
@@ -1267,7 +1267,7 @@ explaining synthesis failures and clarifying conflicting property constraints.
 \sys projects a program into an abstract space of properties, 
 then, it performs transformations within that space (the input query),
 and finally, it regenerates this projection back into a concrete program.
-The idea of casting programs into a high-dimensioanl space has been studied before~\cite{ben-nun2018neural,alon2019code2vec,ellis2020dreamcoder,nye2021platypus},
+The idea of casting programs into a high-dimensional space has been studied before~\cite{ben-nun2018neural,alon2019code2vec,ellis2020dreamcoder,nye2021platypus},
 but \sys's perspective might offer interesting insights.
 
 \heading{Regeneration as a system-building primitive}
@@ -1351,7 +1351,7 @@ graph(p_, I, O) :-
 graph(p, I, O).
 \end{minted}
 \end{wrapfigure}
-The query for \sys is shown on the right and asserts the the input/output behavior of the
+The query for \sys is shown on the right and asserts the input/output behavior of the
 original program is preserved in the output.
 The resulting program must match the input-output behavior of the original.
 The top listing shows the original \ttt{leftPad} library, and the second listing shows the output
@@ -1438,7 +1438,7 @@ It computes the inverse square root of a number using
 Newton's method through bit-level manipulation on the input floating-point number.
 The original implementation is shown in \cref{lst:fast_inv_sqrt_original}.
 \Cref{lst:fast_inv_sqrt_gpt} shows the output of naively regenerating the function using \gptmodel,
-which retains the original's un-idiomatic use of magic numbers and bit-level manipulation.
+which retains the original's unidiomatic use of magic numbers and bit-level manipulation.
 \Cref{lst:fast_inv_sqrt_sys} has the output of \sys, which instead uses the standard library's
 \ttt{sqrt} function to compute the inverse square root.
 \sys provides only I/O examples to its backend LLM, and as such does not overfit to the original implementation.
