@@ -163,7 +163,7 @@ Developers refactor legacy code~\cite{Fowler99,Mens04,facebook2010redesigns,drop
 adapt libraries to changing APIs~\cite{dig2005role,kula2017empiricalstudyimpactrefactoring},
 translate components across languages~\cite{manzoor_cli_python,gaultier_rewrite_cpp},
 % and patch security vulnerabilities~\cite{ikegami2022userefactoringsecurityvulnerability,schneier2013security_vulnerabilities}.
-These transformations, are often brittle, time-consuming, and require significant expertise.
+These transformations are often brittle, time-consuming, and require significant expertise.
 
 Recent advances in natural-language processing, particularly large language
 models (LLMs) have opened new possibilities for automating program
@@ -182,7 +182,7 @@ often overfit to spurious input cues~\cite{xu2023llmfoolitselfpromptbased, wu202
 and lack mechanisms for enforcing precise behavioral properties on the generated code~\cite{roh2025breakthechainreasoningfailuresllms}.
 As a result, developers must prompt and steer them through ad-hoc heuristics, manual trial-and-error, or high-quality (and thus hard to create) examples~\cite{khattab2023dspy,brown2020languagemodelsfewshotlearners},
 leading to workflows that are difficult to audit, integrate, or systematically reason about.
-Bridging this gap calls for an that allows developers to specify explicit semantic constraints and transformation goals, and to reason about their satisfaction in a principled way.
+Bridging this gap calls for an approach that allows developers to specify explicit semantic constraints and transformation goals, and to reason about their satisfaction in a principled way.
 
 This paper explores the feasibility of combining declarative property
 constraints with LLM-based synthesis to support \emph{property-guided program regeneration}.
@@ -283,7 +283,7 @@ that allows players to make custom extensions to key parts of client-side game l
 suggests that perhaps code that deals with user input should all be moved inside 
 the sandboxed runtime.
 Furthermore, the development team would like to identify functions that could 
-be broken-down further to assist with performance profiling.
+be broken down further to assist with performance profiling.
 
 \heading{The state of the art and practise}
 Currently, a developer has access to a myriad of different approaches 
@@ -292,7 +292,7 @@ Code quality tools~\cite{avgustinov2016ql, Fowler99,Mens04,Myers16} and speciali
 code-smells or certain classes of vulnerabilities but are often very highly 
 tied to their target language.
 As the programming-language landscape is becoming increasingly diverse,
-and developers are building systems where multiple different languages are runtimes co-exist,
+and developers are building systems where multiple different languages are runtimes coexist,
 these limitations cannot be ignored.
 Program synthesis could be an attractive avenue that allows 
 the developer to 
@@ -374,7 +374,7 @@ their outputs are \emph{wrong}.
   The high level of modularity present in modern applications allows \sys to be applied effectively inside a codebase.
   In the above graph, edges signify logical dependencies between components 
   and shaded vertices signify parts of the codebase \sys is applied to~(\cref{sec:example}).
-  Dotted edges signify ommited layers of dependencies.
+  Dotted edges signify omitted layers of dependencies.
   }
   \label{fig:ex-large-app}
 \end{figure}
@@ -414,7 +414,7 @@ graph(p_,I,O):-graph(p,I,O),
 \end{wrapfigure}
 To the right is a program written in the \sys DSL to express this intent.
 This query requires the regenerated program \ttt{P\_} to exhibit the same
-input-output behavior on representative inputs that would cause a buffer overflow in the original program \ttt{P}.
+input-output behavior on representative inputs that would cause a buffer overflow in the original program \ttt{P}
 but not on the regenerated program \ttt{P\_}.
 \sys first arrives the set of properties to extract from the
 original program, given the query:
@@ -425,7 +425,7 @@ would cause a buffer overflow in the original program;
 \prop{graph(P, I, O)} extracts the client-observable input-output behavior of the program
 by executing the original program on the generated inputs and recording the outputs;
 and \prop{fsignt(P, S)} extracts each function's signature using a language-aware parser.
-After 30.4 seconds and two attempts, \sys synthesizes the following program:
+After 30.4 seconds and two attempts \sys synthesizes the following program:
 \begin{minted}[]{js}
 #define MAX_C 1024
 char *Args(int argc, char **argv) {
@@ -683,7 +683,7 @@ A success provides an auditable proof of meeting the user's intent,
 at least as far as the extracted properties allow (which is still a lot more than most LLM-based systems can guarantee).
 
 \heading{Prototype implementation}
-The \sys prototype implemetation uses Python v3.13,
+The \sys prototype implementation uses Python v3.13,
 the \ttt{pluggy} system~\cite{pluggy} to define plugin hooks,
 compiles queries to the Clingo language~\cite{DBLP:journals/corr/GebserKKS14} and uses the \ttt{clasp}~\cite{gebser2007clasp}
 solver to arrive at a stable model which is converted to synthesis plans. 
@@ -695,7 +695,7 @@ with the entire codebase being 605 lines-of-code.
 For research on program regeneration to flourish, it needs a common benchmark
 suite that captures the diversity and difficulty of real-world transformations.
 Today, there is no equivalent of SPEC for performance or Defects4J for bug
-fixing---researchers and practioners rely on ad hoc examples that are hard to compare and often
+fixing---researchers and practitioners rely on ad hoc examples that are hard to compare and often
 oversimplified.
 This lack of a shared baseline obscures progress. 
 A useful set of benchmarks should include
@@ -705,9 +705,9 @@ programs that
 (3) cover a wide range of computational domains.
 Each benchmark should include an original program, 
 the same program that undergoes the transformation described in natural-language 
-in an accompanying file, and a set of tests that verify that the transformation was succesful.
+in an accompanying file, and a set of tests that verify that the transformation was successful.
 Following the lead of benchmarking efforts~\cite{SPEC_CPU2017, dacapo2006, koala:atc:2025}, the suite should be made open-source, community 
-first, and an established technical steering commitee should guide extensions and modifications towards maintaining the suite's relevance.
+first, and an established technical steering committee should guide extensions and modifications towards maintaining the suite's relevance.
 
 \sys takes a step in this direction with its prototype benchmarks.
 This suite contains tasks across several dimensions: its
@@ -791,7 +791,7 @@ Highlights from this preliminary evaluation can be found in \cref{appendix:sampl
 The so-far 
 described subsystems~(\cref{sec:design}) can be combined to solve all transformation
 goals in the snippets shown so far~(\cref{sec:example}).
-Scaling these techniques further, however, poses more challegnes and uncovers implications.
+Scaling these techniques further, however, poses more challenges and uncovers implications.
 
 
 \heading{Trust model and correctness}
