@@ -60,6 +60,7 @@
 \newcommand{\heading}[1]{\vspace{2pt}\noindent\textbf{\emph{#1}}:\enspace}
 \newcommand{\ttt}[1]{\texttt{#1}\xspace}
 \newcommand{\xxx}{\colorbox{red!30}{xxx}\xspace}
+\newcommand{\rtype}[1]{\setlength{\fboxsep}{1.75pt}\colorbox{lightperiwinkle}{\texttt{#1}}}
 \newcommand{\promptbox}[1]{%
   \vspace{0.5em}%
   \hspace*{-0.0135\columnwidth}%
@@ -73,7 +74,7 @@
 \crefmultiformat{section}{\S#2#1#3}{--\S#2#1#3}{, \S#2#1#3}{ and \S#2#1#3}
 
 \setlength{\intextsep}{0pt} % vertical space above/below
-\setlength{\columnsep}{5pt} % horizontal space between text and figure
+% \setlength{\columnsep}{5pt} % horizontal space between text and figure
 
 \begin{document}
 
@@ -93,20 +94,18 @@
 
 \begin{abstract}
   Software evolution tasks---like security hardening, porting critical components to safer 
-  languages, or refactoring opaque legacy code---are brittle and time-consuming.
-  Large language models (LLMs) have shown promise in automating such tasks,
+  languages, or refactoring opaque legacy code---are common-place, but as brittle and time-consuming as ever.
+  Towards their automation, large language models (LLMs) have shown promise in automating such tasks,
   but their outputs are shaped by surface cues, lack
   semantic guarantees, and their usage often boil down to brittle prompting strategies.
-This paper presents \sys, a system for controllable program regeneration that
+  This paper presents \sys, a system for controllable program regeneration that
   combines declarative property constraints with LLM-guided synthesis. Unlike
   prior approaches, \sys treats the input program as an untrusted artifact and
   explicitly projects it into a minimal set of verifiable properties, such as
-  input/output behavior, execution traces, and API signatures. These properties
-  serve as constraints during synthesis and are checked post hoc to ensure
-  correctness.
-\sys is evaluated on a diverse set of program transformation tasks
-including security hardening, language translation, idiomatic rewriting, de-obfuscation,
-and modular refactoring showing strong results, even on tasks where state-of-the-art LLMs fail.
+  the program's input/output behavior, execution traces, or interaction with external databases.
+  These properties are extracted and serve the dual purpose of guiding synthesis and guardrailing synthesized outputs.
+  \sys unifies established techniques and inspires new ones. % TODO: Rework this
+  A preliminary evaluation shows that \sys succeeds even on tasks where state-of-the-art LLMs fail.
 \end{abstract}
 
 % Since this is a position paper (and not a tool paper), I would spend most of the paper selling the Idea, and less on the system and language. I think the examples does this well (but the language still feels a little too magical).
@@ -134,13 +133,11 @@ and modular refactoring showing strong results, even on tasks where state-of-the
 
 \begin{figure}[t]
   % https://docs.google.com/drawings/d/1ozMu2B0RUhyLWC_rM6GLBrioov80-M06CBqYRAhCk18/edit
-  \includegraphics[width=.9\columnwidth]{figs/kvasir_projection.pdf}
+  \includegraphics[width=.7\columnwidth]{figs/kvasir_projection.pdf}
   \caption{\textbf{Property projection and verifiable regeneration in \sys.}
   Instead of transforming source code directly, \sys projects the original
   program into a minimal set of verifiable properties---such as input/output
   examples, system call traces, \etc.
-  These properties serve as declarative
-  constraints for synthesis.
   The regenerated implementation is then checked to
   ensure it satisfies the specified properties, providing a verifiable
   foundation for trust unlike purely prompt-based LLM workflows.}
@@ -181,7 +178,8 @@ However, surface-level patterns in the input shape their outputs~\cite{yang2025e
 they struggle with negative constraints~\cite{hwang2024thinkpinkelephant,jiang2024llmsdreamelephantswhen},
 often overfit to spurious input cues~\cite{xu2023llmfoolitselfpromptbased, wu2023deceptpromptexploitingllmdrivencode},
 and lack mechanisms for enforcing precise behavioral properties on the generated code~\cite{roh2025breakthechainreasoningfailuresllms}.
-As a result, developers must prompt and steer them through brittle heuristics or manual trial-and-error, leading to workflows that are difficult to audit, integrate, or systematically reason about.
+As a result, developers must prompt and steer them through ad-hoc heuristics, manual trial-and-error, or high-quality (and thus hard to create) examples~\cite{khattab2023dspy,brown2020languagemodelsfewshotlearners},
+leading to workflows that are difficult to audit, integrate, or systematically reason about.
 Bridging this gap calls for an that allows developers to specify explicit semantic constraints and transformation goals, and to reason about their satisfaction in a principled way.
 
 This paper explores the feasibility of combining declarative property
@@ -218,20 +216,24 @@ Third, the underlying synthesis technology---particularly LLMs---is evolving rap
 % \sys extracts a set of relevant properties, derived from its logic engine and a domain-aware knowledge base, and synthesizes a new program that satisfies the specified constraints.
 % If no such program exists, \sys returns a failure explanation from the unsatisfiable core.
 
+\heading{Rethinking program transformations}
+XXX Here, talk about bidirectional analysis, how now having a program that extracts 
+a propoerty means that plugging it into sys will allow you to regenerate programs that hold or max/min-inimize over that property
+
 \heading{Deployment scenarios and limitations}
 \sys supports a range of deployment scenarios.
 It is particularly well-suited for use during maintenance and auditing phases, where developers seek to refactor or replace components, especially when the original code is difficult to understand, modify, or is unavailable and the component exists only as a binary.
 It can also assist during development, for instance when integrating
 third-party modules that must be adapted to local conventions or hardened
 against security vulnerabilities.
-For example, a developer can regenerate a C library as idiomatic
-JavaScript while preserving I/O equivalence, or decompose a monolithic function
-into modular components suitable for sandboxing.
-However, \sys is not designed for whole-program synthesis or large-scale migrations.
-Its strength lies in scoped regeneration tasks, typically at the granularity of a function, method, or small module---where transformation goals can be explicitly stated and verified in isolation.
-To this end, \sys can function not only as a standalone tool but also as a
-library, where other components can invoke it as a programmable,
-constraint-guided regeneration module.
+% For example, a developer can regenerate a C library as idiomatic
+% JavaScript while preserving I/O equivalence, or decompose a monolithic function
+% into modular components suitable for sandboxing.
+% However, \sys is not designed for whole-program synthesis or large-scale migrations.
+% Its strength lies in scoped regeneration tasks, typically at the granularity of a function, method, or small module---where transformation goals can be explicitly stated and verified in isolation.
+% To this end, \sys can function not only as a standalone tool but also as a
+% library, where other components can invoke it as a programmable,
+% constraint-guided regeneration module.
 
 % Leverages insights: (1) modern applications highly modular (2) the problem of LLM-assisted program transformations needs to be transformed in a way that a ground truth is readily available: the original program
 % (3) towards the generality and longevity of this solution the interface needs to be purely declarative, to allow independent progress of the underlying components to give automatic benefits
@@ -245,8 +247,97 @@ constraint-guided regeneration module.
 %  \item An empirical evaluation demonstrating \sys's feasibility across transformation scenarios~(\cref{sec:evaluation}).
 % \end{itemize}
 
-\section{Problem Statement}
+\section{Point Solutions}
 \label{sec:problem}
+
+Consider a complex application, like the one
+sketched in \cref{fig:ex-large-app}.
+A single codebase includes many needs for transformations.
+For example, a developer going through older parts of the codebase written by 
+a previous team might realize that many functions are susceptible to buffer-overflow 
+either through malice or by accident.
+Then, thinking about a recently incorporated scripting component 
+that allows players to make custom extensions to key parts of client-side game logic using JavaScript 
+gives the idea tha maybe code that deals with user input should all be moved inside 
+the sandboxed script engine.
+Furthermore, the development team would like to identify functions that could 
+be broken-down further to assist with performance profiling.
+
+\heading{The state of the art and practise}
+Currently, a developer has access to a myriad of different approaches 
+to attack the above problems, but all come with shortcomings.
+Code quality tools~\cite{codeql, MORE} and specialized transformation systems might be able to detect 
+code-smells or certain classes of vulnerabilities but are often very highly 
+tied to their target lagnuage.
+As the programming-language landscape is becoming increasingly diverse,
+and developers are building systems where multiple different languages are runtimes co-exist,
+these limitations cannot be ignored.
+Program synthesis could be an attractive avenue that allows 
+the developer to 
+The ever-present limitation of traditional program synthesis techniques is their 
+inability to scale beyond narrowly-defined computational domains.
+This scalability barrier is what statistical techniques like LLMs 
+have promised to solve.
+An LLM could in principle be tasked with performing all the afformentioned trasnformations.
+However, their problems X, Y, Z. 
+There have been systems that provide ranging amounts of control of LLM-generated 
+programs, but there is a large gap of a unifying framework that identifies 
+key parts of the problems and applies LLMs in a way that underlines their strenghths 
+and allows the programmer to steer their output and be aware of incorrect generations.
+
+
+% % Related work that fails to address the problem
+% \heading{Program synthesis}
+% Program synthesis research spans a rich space of techniques.
+% Classical techniques emphasize correctness and
+% interpretability, synthesizing programs from specifications~\cite{alur2013syntax, feser2015synthesizing, gulwani2011automating,leino2016dafny},
+% type or syntax constraints \cite{polikarpova2016program,reynolds2019syguscomp},
+% or examples~\cite{jha2010oracle, raza2018disjunctive, singh2016blinkfill,wu2023programming},
+% which are provided either by users or automatically inferred~\cite{cambronero2019active,harp:ccs:2021}
+% These works often target narrowly
+% defined domains such as string manipulation~\cite{harp:ccs:2021} or data migration
+% \cite{yaghmazadeh2018automated} and focus on ensuring provable guarantees.
+% More recently, LLM-based methods~\cite{austin2021program, chen2021evaluating}
+% explore broad-domain code generation via prompt-based conditioning.
+% While flexible, these models are prone to hallucination and struggle
+% with reasoning under negation or satisfying structured constraints~\cite{xu2023llmfoolitselfpromptbased, wu2023deceptpromptexploitingllmdrivencode,jiang2024llmsdreamelephantswhen,hwang2024thinkpinkelephant}.
+
+% \sys leverages insights from both these paradigms.
+% Unlike purely symbolic or purely neural approaches, it leverages LLMs within a
+% constrained planning framework to guide transformations while remaining
+% responsive to property-based requirements.
+
+% \heading{Program transformations and refactoring}
+% The evolution and maintenance of software systems often involve transformations
+% such as refactoring~\cite{Fowler99,Mens04,Myers16}, translation, or security hardening. % TODO: Add more citations
+
+% Tools in this space often operate via syntax-tree transformations or
+% domain-specific templates. Verification-based methods such as \textsc{Dafny}
+% \cite{leino2016dafny} and \textsc{CBMC} \cite{Clarke04} ensure functional correctness
+% but require heavy formalization.
+% Others automate migration via
+% programming-by-example or interactive guidance \cite{gulwani2017program, le2017interactive}.
+
+
+% \sys aims to generalize this landscape by treating transformations as
+% goal-directed regenerations---rather than prescriptive rewrites, driven by
+% properties such as program behaviors and architectural goals, expressed declaratively.
+
+% \heading{Logic programming and constraint solving}
+% Logic programming has long served as a foundation for reasoning in programming
+% tools, offering a declarative model for expressing properties and constraints.
+% Answer Set Programming (ASP), in particular, provides a rich framework for
+% expressing defaults, exceptions, and optimization via stable model semantics
+% \cite{Gelfond_2000, Gelfond_2002, Eiter_2009}. 
+% Paradigms like ASP have been used for
+% declarative program analysis \cite{benton2007interactive}, automated planning
+% \cite{nguyen2020explainable, son2022answersetplanningsurvey}, and knowledge
+% representation in verification and synthesis pipelines.
+
+% \sys uses ASP as its planning back-end for the planning, decision-making
+% process, while also uses its straightforward optimization capabilities.
+% For each transformation task, \sys formulates the property-satisfaction problem as a logic query and uses an ASP solver to
+% synthesize a feasible transformation plans.
 
 \section{Example}
 \label{sec:example}
@@ -256,9 +347,9 @@ constraint-guided regeneration module.
   % https://docs.google.com/drawings/d/1zMcTurJ8twCG4BrkSUAJersbNSl5UQkogHqqg88vG9M/edit
   \includegraphics[width=.9\columnwidth]{figs/kvasir_application.pdf}
   \caption{\textbf{Applying \sys to a complex game application.}
-  The high level of modularity present in modern applications allows \sys to be applied effectively across a codebase.
-  Edges signify logical dependencies between components 
-  and shaded vertices signify parts of the codebase \sys is applied as part of the example~(\cref{sec:example}).
+  The high level of modularity present in modern applications allows \sys to be applied effectively inside a codebase.
+  In the above graph, edges signify logical dependencies between components 
+  and shaded vertices signify parts of the codebase \sys is applied to~(\cref{sec:example}).
   Dotted edges signify ommited layers of dependencies.
   }
   \label{fig:ex-large-app}
@@ -313,7 +404,7 @@ would cause a buffer overflow in the original program;
 by executing the original program on the generated inputs and recording the outputs;
 and \texttt{signature(P, S)} extracts each function's signature using a language-aware parser.
 
-After 30.4 seconds and one attempt, \sys synthesizes the following program:
+After 30.4 seconds and two attempts, \sys synthesizes the following program:
 \begin{minted}[]{js}
 #define MAX_C 1024
 char *Args(int argc, char **argv) {
@@ -330,6 +421,7 @@ for (i = 1; i < argc; i++) {
   return args; }
 \end{minted}
 
+\heading{Cross-language translation}
 Building on the same source as the previous example, \sys can perform
 cross-language translation.
 In this scenario, the developer aims to lift input
@@ -344,8 +436,8 @@ becomes easier to enforce memory safety and auditability constraints.
 language(p_, javascript).
 graph(p_, Ijs, Ojs) :-
      graph(p, Ic, Oc),
-llm_translate(Ic, Ijs),
-llm_translate(Oc, Ijs).
+     tr(Ic, Ijs),
+     tr(Oc, Ijs).
 \end{minted}
 \end{wrapfigure}
 The query specifies that the regenerated program \texttt{P\_} must be
@@ -396,17 +488,16 @@ float Q_rsqrt(float number) {
 The query to the right uses lines of code as a coarse metric of
 idiomaticity. \sys regenerates the program, minimizing this metric while
 preserving observable behavior over a representative set of inputs which will be generated by an LLM instance.
-\begin{wrapfigure}[2]{r}{.55\columnwidth}
+\begin{wrapfigure}[2]{r}{.56\columnwidth}
 \begin{minted}{prolog}
 graph(p_,I,O):-graph(p,I,O).
 #min N: len(p_, N).
 \end{minted}
 \end{wrapfigure}
-\sys extracts the set of properties \texttt{signature(F)} and \texttt{graph(F)}
-from the original function, where \texttt{signature(F)} is the function's
-signature (including its name, return type, and arguments) and
-\texttt{graph(F)} captures the I/O behavior on a generated set of
-floating-point inputs.
+\sys extracts the set of properties \texttt{graph(p)}
+from the original program
+the captures captures the input-output behavior on a generated set of
+inputs.
 In this case, where the goal is to optimize an aspect of the program, \sys
 re-prompts the model to regenerate the program until it can make no further
 improvements or observes a negligible difference after two consecutive
@@ -470,7 +561,7 @@ an LLM instance.
 Alternatively, the user could have supplied specific names and
 signatures as additional guiding properties.
 
-The resulting modular program is:
+The resulting program which now conists of two functions is:
 \begin{minted}{javascript}
 function connectDB() {
   const sqlite = require('sqlite');
@@ -496,21 +587,86 @@ uses to construct the regeneration plan.
 \section{System Sketch}
 \label{sec:design}
 
-\sys is a programming framework for program regeneration. It enables developers to express transformation goals declaratively—as constraints over the desired properties of regenerated code—and automatically synthesizes implementations that satisfy those constraints.
+\begin{wrapfigure}{r}{.4\columnwidth}
+  % https://docs.google.com/drawings/d/1d0piUrtExfTtUh_RuPfJFt1uZFOBEp0k-mHKSnogu-4/edit
+  \includegraphics[width=.4\columnwidth]{figs/kvasir_levels.pdf}
+  \label{fig:levels}
+  \caption{The four key ingredients 
+  of \sys that can be developed in parallel.}
+\end{wrapfigure}
+For \sys to enable developers
+to express transformation goals declaratively---as constraints over the desired
+properties of regenerated code---and automatically synthesizes implementations
+that satisfy those constraints.
 
-At a high level, \sys operates in three stages:
+% The three key subsystems are:
 
-\begin{enumerate}
-  \item \textbf{Property Specification and Extraction}: Users define goals using logical constraints over program properties (e.g., language, side-effect freedom, input/output equivalence). Plugins contribute analyses and extraction routines to populate these properties from the input program.
-  \item \textbf{Constraint-Guided Synthesis}: The framework converts property constraints into structured prompts for a language model. These prompts describe what must be preserved or changed, including examples and declarative requirements.
-  \item \textbf{Verification and Feedback}: Synthesized candidates are validated against the target properties. Failures trigger retries or incremental refinements until the goals are satisfied or search is exhausted.
-\end{enumerate}
+% \begin{enumerate}
+%   \item \textbf{Property Specification and Extraction}: Users define goals
+%   using logical constraints over program properties (e.g., language,
+% side-effect freedom, input/output equivalence). Plugins contribute analyses and
+% extraction routines to populate these properties from the input program.
+%   \item \textbf{Constraint-Guided Synthesis}: The framework converts property
+%     constraints into structured prompts for a language model. These prompts
+%     describe what must be preserved or changed, including examples and
+%     declarative requirements.
+%   \item \textbf{Verification and Feedback}:
+%       Synthesized candidates are validated against the target properties.
+%       Failures trigger retries or incremental refinements until the goals are
+%       satisfied or search is exhausted.
+% \end{enumerate}
 
-This design makes regeneration tasks programmable, composable, and extensible, without requiring developers to encode transformation logic manually.
+% This design makes regeneration tasks programmable, composable, and extensible, without requiring developers to encode transformation logic manually.
 
-\subsection{Implementation and Evaluation}
+\heading{Extensibility through plugins}
+In order to maximize the applicability of the \sys framework 
+towards many different kinds of transformations,
+it is designed as an extensible platform rather than a monolithic tool.
+All core functionality is provided by plugins, each contributing
+the following functionality in the form three runtime hooks:
+(1) \ttt{apply} which obtains static or dynamic properties from the original program (\eg
+I/O traces, type signatures, or side-effect summaries),
+(2) \ttt{verify} that will check the regenerated program against these properties (re-extracting them and comparing them to the original ones),
+and
+(3) \ttt{know} adds pre/post-conditions that inform regeneration planning.
+The vision of \sys it to encourages community-driven growth, where specialized plugins---\eg for
+security invariants or performance contracts---can coexist and interoperate
+within a single regeneration framework~(\cref{sec:discussion}).
 
-We evaluate \sys across several dimensions: its
+\heading{A declarative query language}
+To detach itself from the details of the underlying analysis and 
+
+This separation of concerns---intent expressed declaratively, execution handled
+automatically---makes regeneration auditable, repeatable, and free from brittle,
+manual prompt-specific tuning.
+
+\heading{Regeneration guardrails}
+The final ingredient is a synthesis–verification loop that turns declarative goals into trustworthy code.
+Given extracted properties and a query, Kvasir synthesizes candidate implementations using LLMs, leveraging their flexibility and knowledge of diverse programming idioms.
+Each candidate is then checked against the declared properties: does it preserve the specified behavior, meet language or security constraints, and satisfy any additional invariants?
+Failures trigger retries, refined prompts, or additional property extraction,
+while successes provide an auditable proof of meeting the user’s intent,
+at least as far as the properties allow (which is still a lot more than most LLM-based systems can guarantee).
+
+\heading{Prototype implementation}
+The \sys prototype implemetation uses Python vXXX,
+the Pluggy library to define pluggable hooks, compiles queries to Clingo and uses the clasp
+solver to arrive at a stable model which is converted to synthesis plans. 
+XXX plugins have been implemented. All plugins range from XXX to XXX lines-of-code,
+with the entire codebase being XXX lines-of-code.
+
+\heading{A benchmark suite for program regeneration}
+For research on program regeneration to flourish, it needs a common benchmark
+suite that captures the diversity and difficulty of real-world transformations.
+Today, there is no equivalent of SPEC for performance or Defects4J for bug
+fixing—researchers rely on ad hoc examples that are hard to compare and often
+oversimplified. This lack of a shared baseline obscures progress: when one
+approach claims success on “language migration” and another on “security
+hardening,” we have no way to tell whether they solve the same problem, let
+alone which approach generalizes better.
+
+Kvasir takes a step in this direction with its prototype benchmarks.
+This suite contains tasks across several dimensions: its
 ability to regenerate correct and maintainable
 code, the impact of property-driven guidance,
 and practical considerations around applying it
@@ -519,67 +675,64 @@ preliminary and intended to illustrate
 feasibility and trade-offs.
 
 % TODO: Describe what a good benchmark suite would look like
-The benchmark suite comprises 37 tasks spanning simple translation, obfuscation removal, and security hardening (Table~\ref{tab:benchmarks}). Inputs were drawn from Rosetta Code, popular npm and PyPi packages, known supply-chain attacks, and selected obfuscated programs from the IOCCC.
+The benchmark suite comprises 37 tasks spanning simple translation, obfuscation
+removal, and security hardening (\cref{tab:benchmarks}). Inputs were drawn
+from Rosetta Code, popular npm and PyPi packages, known supply-chain attacks,
+and selected obfuscated programs from the IOCCC.
 
-A regeneration is counted as successful if the output satisfies the declared properties and passes either functional tests or manual inspection.
+A regeneration is counted as successful if the output satisfies the declared
+properties and passes both functional tests (when present) and manual inspection.
 
-\begin{table}[ht]
+\begin{table}[t]
 \centering
-\caption{\textbf{Benchmark Overview}.}
-\begin{tabular}{lrll}
+\caption{\textbf{Benchmark Overview}. 
+The N column shows the number of programs/functions from each benchmark;
+the Purpose column describes the regeneration task.}
+\begin{tabular}{lrrll}
 \toprule
-Benchmark & N & Purpose & Sources \\
+Benchmark   & N  & Purpose                    & Sources \\
 \midrule
-Rosetta Code & 16 & Cross-language translation & \cite{rosettacode} \\
-Short Utilities & 13 & Parity preservation & \cite{regbench2025} \\
-SSCA & 3 & Malicious behavior removal & \cite{ohm2020backstabber,ev:eurosec:2022} \\
-IOCCC & 2 & Deobfuscation & \cite{ioccc} \\
-% Microbenchmarks & 3 & Idiomatic rewriting, modularization & This paper \\
+RosettaCode & 16 & Cross-language translation & \cite{rosettacode} \\
+Utilities   & 13 & Parity preservation        & \cite{regbench2025} \\
+SSCA        & 3  & Malicious behavior removal & \cite{ohm2020backstabber,ev:eurosec:2022} \\
+IOCCC       & 2  & Deobfuscation              & \cite{ioccc} \\
+% Microbenchmarks & 3  & LoC & Idiomatic rewriting, modularization & This paper \\
 \bottomrule
 \end{tabular}
 \label{tab:benchmarks}
 \end{table}
 
-\subsection{Correctness and Functional Equivalence}
+\heading{Correctness results}
+Overall, \sys regenerated correct code in most cases. All Rosetta Code and
+utility tasks were completed successfully. For supply-chain attacks, \sys
+removed malicious behaviors while preserving legitimate functionality,
+confirming that treating the original source as untrusted can be effective. 
 
-Overall, \sys regenerated correct code in most cases. All Rosetta Code and utility tasks were completed successfully. For supply-chain attacks, \sys removed malicious behaviors while preserving legitimate functionality, confirming that treating the original source as untrusted can be effective. 
+Regeneration was less reliable in obfuscated C programs: one IOCCC entry was
+successfully simplified, while another failed due to incomplete semantic
+understanding and inconsistent output formatting.
 
-Regeneration was less reliable in obfuscated C programs: one IOCCC entry was successfully simplified, while another failed due to incomplete semantic understanding and inconsistent output formatting.
+In microbenchmarks, \sys generated idiomatic rewrites (e.g., replacing unsafe
+inverse square root implementations with standard library calls) while
+maintaining observable behavior.
 
-In microbenchmarks, \sys generated idiomatic rewrites (e.g., replacing unsafe inverse square root implementations with standard library calls) while maintaining observable behavior.
+\heading{Comparison to naive prompting}
+As a baseline, we prompted a large language model with the full source code and
+a natural language description of the task. For simple translation and trivial
+refactoring, this approach often succeeded. However, it frequently failed in
+cases requiring property preservation without leaking implementation details. 
 
-\subsection{Impact of Property-Guided Synthesis}
-
-A key observation is that constraining the synthesizer to operate only over extracted properties significantly improved reliability. For example, when regenerating modules with hidden side effects, naive prompting often reproduced those side effects verbatim. By contrast, \sys’s selective extraction of I/O traces and signatures avoided this overfitting. 
-
-Prompt size was also reduced substantially (up to 60\%), and synthesis iterations converged faster.
-
-\subsection{Comparison to Naive Prompting}
-
-As a baseline, we prompted a large language model with the full source code and a natural language description of the task. For simple translation and trivial refactoring, this approach often succeeded. However, it frequently failed in cases requiring property preservation without leaking implementation details. 
-
-For example, in the malicious supply-chain benchmarks, naive prompting preserved obfuscated credential exfiltration in regenerated code, whereas \sys consistently eliminated it.
+For example, in the malicious supply-chain benchmarks, naive prompting
+preserved obfuscated credential exfiltration in regenerated code, whereas \sys
+consistently eliminated it.
 
 % These results support the claim that \sys's planning logic---driven by explicit
 % property extraction and knowledge-base reasoning---yields safer and more
 % controllable transformations than prompt-only LLM-based systems.
 
-\section{Discussion and Conclusion}
-\label{sec:discussion}
 
-\sys supports property-guided regeneration of program fragments, with a
-particular focus on function-level rewrites. Its strength lies in combining
-symbolic reasoning and generative synthesis in a modular and interpretable
-framework. However, this design comes with inherent trade-offs.
-
-\heading{Dependence on property specification}
-The system relies heavily on the quality and granularity of extracted or declared properties.
-In cases where desired behaviors cannot be easily expressed using available
-predicates, or where plugins fail to extract meaningful constraints, the
-regeneration plan may be under-constrained, leading to brittle or incorrect
-outputs. The framework is extensible, but each new property class requires the
-development of a new plugin that will provide a set of pre- and
-post-conditions, an extractor, and a verifier.
+\section{More Challenges}
+\label{sec:limitations}
 
 \heading{Trust model and correctness}
 \sys
@@ -620,23 +773,31 @@ is relevant to overcoming this limitation.
 The current \sys prototype
 supports Python, JavaScript, Haskell, and C. 
 
+
+
+\section{More Transformations}
+\label{sec:discussion}
+
+
+\sys supports property-guided regeneration of program fragments, with a
+particular focus on function-level rewrites. Its strength lies in combining
+symbolic reasoning and generative synthesis in a modular and interpretable
+framework. However, this design comes with inherent trade-offs.
+
+\heading{Dependence on property specification}
+The system relies heavily on the quality and granularity of extracted or declared properties.
+In cases where desired behaviors cannot be easily expressed using available
+predicates, or where plugins fail to extract meaningful constraints, the
+regeneration plan may be under-constrained, leading to brittle or incorrect
+outputs. The framework is extensible, but each new property class requires the
+development of a new plugin that will provide a set of pre- and
+post-conditions, an extractor, and a verifier.
+
 % Overall, \sys offers a flexible framework for controlled regeneration, but
 % its effectiveness depends on the specificity of goals, the availability of
 % property logic, and the scope of the transformation task. Its design favors
 % composability and clarity over full automation, aiming to serve as a building
 % block in broader refactoring, auditing, or hardening pipelines.
-
-\section{Conclusion}
-This paper introduced \sys, a system for property-guided program regeneration
-that bridges the flexibility of large language models with the precision of
-logic-driven planning.
-By allowing developers to declaratively specify
-transformation goals as logical constraints, \sys elevates LLM-assisted program
-transformations to a controllable, interpretable, and iterative synthesis-verification
-process.
-Evaluation demonstrates that \sys produces high-quality regenerations
-across diverse tasks, outperforming naive prompting baselines in correctness,
-controllability, and resilience to adversarial or obfuscated inputs.
 
 \sys opens the door to a new class of synthesis tools that combine symbolic
 reasoning and neural generation under a unified, extensible framework.
@@ -644,60 +805,6 @@ As program synthesis systems grow increasingly reliant on LLMs, I believe the
 future lies in harnessing their generative power within a framework that retains
 correctness, explainability, and developer control as first-class citizens.
 
-
-\section{Related Work}
-
-\heading{Program synthesis}
-Program synthesis research spans a rich space of techniques.
-Classical techniques emphasize correctness and
-interpretability, synthesizing programs from specifications~\cite{alur2013syntax, feser2015synthesizing, gulwani2011automating,leino2016dafny},
-type or syntax constraints \cite{polikarpova2016program,reynolds2019syguscomp},
-or examples~\cite{jha2010oracle, raza2018disjunctive, singh2016blinkfill,wu2023programming},
-which are provided either by users or automatically inferred~\cite{cambronero2019active,harp:ccs:2021}
-These works often target narrowly
-defined domains such as string manipulation~\cite{harp:ccs:2021} or data migration
-\cite{yaghmazadeh2018automated} and focus on ensuring provable guarantees.
-More recently, LLM-based methods~\cite{austin2021program, chen2021evaluating}
-explore broad-domain code generation via prompt-based conditioning.
-While flexible, these models are prone to hallucination and struggle
-with reasoning under negation or satisfying structured constraints~\cite{xu2023llmfoolitselfpromptbased, wu2023deceptpromptexploitingllmdrivencode,jiang2024llmsdreamelephantswhen,hwang2024thinkpinkelephant}.
-
-\sys leverages insights from both these paradigms.
-Unlike purely symbolic or purely neural approaches, it leverages LLMs within a
-constrained planning framework to guide transformations while remaining
-responsive to property-based requirements.
-
-\heading{Program transformations and refactoring}
-The evolution and maintenance of software systems often involve transformations
-such as refactoring~\cite{Fowler99,Mens04,Myers16}, translation, or security hardening. % TODO: Add more citations
-
-Tools in this space often operate via syntax-tree transformations or
-domain-specific templates. Verification-based methods such as \textsc{Dafny}
-\cite{leino2016dafny} and \textsc{CBMC} \cite{Clarke04} ensure functional correctness
-but require heavy formalization.
-Others automate migration via
-programming-by-example or interactive guidance \cite{gulwani2017program, le2017interactive}.
-
-
-\sys aims to generalize this landscape by treating transformations as
-goal-directed regenerations---rather than prescriptive rewrites, driven by
-properties such as program behaviors and architectural goals, expressed declaratively.
-
-\heading{Logic programming and constraint solving}
-Logic programming has long served as a foundation for reasoning in programming
-tools, offering a declarative model for expressing properties and constraints.
-Answer Set Programming (ASP), in particular, provides a rich framework for
-expressing defaults, exceptions, and optimization via stable model semantics
-\cite{Gelfond_2000, Gelfond_2002, Eiter_2009}. 
-Paradigms like ASP have been used for
-declarative program analysis \cite{benton2007interactive}, automated planning
-\cite{nguyen2020explainable, son2022answersetplanningsurvey}, and knowledge
-representation in verification and synthesis pipelines.
-
-\sys uses ASP as its planning back-end for the planning, decision-making
-process, while also uses its straightforward optimization capabilities.
-For each transformation task, \sys formulates the property-satisfaction problem as a logic query and uses an ASP solver to
-synthesize a feasible transformation plans.
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib.bib}
@@ -999,5 +1106,6 @@ function stringCompare(a, b) { return a.localeCompare(b); }
   \label{lst:string_compare_sys}
 \end{listing}
 
+\cleardoublepage
 
 \end{document}
