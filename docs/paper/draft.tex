@@ -610,6 +610,18 @@ $\ttt{language}(p, \ttt{haskell}) \Rightarrow \ttt{pure}(p)$
 captures the assumption that programs written in Haskell are pure by default.
 Such axioms allow inferred properties to trigger downstream constraints or synthesis behaviors.
 
+\heading{Plugins}
+In order to maximize the applicability of the \sys framework 
+towards many different kinds of transformations,
+it is designed as an extensible platform rather than a monolithic tool.
+All core functionality is provided by plugins, each contributing
+the following functionality in the form three runtime hooks:
+(1) \ttt{apply} which obtains static or dynamic properties from the original program (\eg
+input-output traces, type signatures, or side-effect summaries),
+(2) \ttt{verify} that will check the regenerated program against these properties (re-extracting them and comparing them to the original ones),
+and
+(3) \ttt{know} facts to the knowledge-base that inform regeneration planning.
+
 \heading{Compilation to ASP}
 Given a source program written in the \sys query language, the compiler
 performs a syntactic de-sugaring into ASP rules~(\cref{fig:asp-compilation}).
