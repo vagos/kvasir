@@ -79,9 +79,8 @@
 
 \begin{document}
 
-
-\title{\sys: Scalable, Property-Guided\\ Program Regeneration}
-\author{Evangelos Lamprou}
+\title{Scalable Property-Guided Program Regeneration}
+\author{}
 
 
 % Use cases for something like this include:
@@ -211,7 +210,7 @@ which lifts the projection back to a concrete implementation~(\cref{fig:projecti
 Three key insights shape the design of \sys.
 First, modern software is highly decomposable~\cite{vfunction2024modular, isoline2018decomposition, schechter2011visualizing, breakapp:ndss:2018}, making it feasible to reason about transformations at the granularity of individual modules, libraries, or functions.
 Second, the program \emph{regeneration} setting provides a unique advantage: the original program serves as a concrete ground-truth, enabling semantic comparisons and verification of the transformed output, something impossible in traditional synthesis tasks.
-Third, the underlying synthesis technology---particularly LLMs---is evolving rapidly; a declarative interface harnesses this progress without disrupting the framework's end user.
+Third, the underlying synthesis technology---particularly LLMs---is evolving rapidly; a declarative interface can harness this progress without disrupting the framework's end user.
 
 % Guided by these insights, \sys casts transformation as a constrained synthesis problem.
 % At its core is a property-driven pipeline: users express goals as logical constraints over semantic properties, such as input/output behavior, side-effect freedom, target language, or structural modularity.
@@ -231,24 +230,13 @@ verification loop, can be used to \emph{regenerate} programs that
 satisfy, minimize, or maximize that property. 
 This shifts program analyses from passive diagnostics into \emph{active drivers} 
 of change: any property extractor becomes, effectively, a transformation oracle. 
-The result is an extensible ecosystem where existing analyses not only tell us 
-what is wrong or suboptimal, but also allow us to automatically create 
-semantics-preserving, property-optimized alternatives.
-
-\heading{Deployment scenarios}
-\sys supports a range of deployment scenarios.
-It is particularly well-suited for use during maintenance and auditing phases, where developers seek to refactor or replace components, especially when the original code is difficult to understand, modify, or is unavailable and the component exists only as a binary.
-It can also assist during development, for instance when integrating
-third-party modules that must be adapted to local conventions or hardened
-against security vulnerabilities.
-% For example, a developer can regenerate a C library as idiomatic
-% JavaScript while preserving input-output equivalence, or decompose a monolithic function
-% into modular components suitable for sandboxing.
-% However, \sys is not designed for whole-program synthesis or large-scale migrations.
-% Its strength lies in scoped regeneration tasks, typically at the granularity of a function, method, or small module---where transformation goals can be explicitly stated and verified in isolation.
-% To this end, \sys can function not only as a standalone tool but also as a
-% library, where other components can invoke it as a programmable,
-% constraint-guided regeneration module.
+This is not all, as 
+its also possible to morph the extracted properties,
+treating them as intermediate representations, thus further increasing 
+the transformation space.
+% The result is an extensible ecosystem where existing analyses not only tell us 
+% what is wrong or suboptimal, but also allow us to automatically create 
+% semantics-preserving, property-optimized alternatives.
 
 % Leverages insights: (1) modern applications highly modular (2) the problem of LLM-assisted program transformations needs to be transformed in a way that a ground truth is readily available: the original program
 % (3) towards the generality and longevity of this solution the interface needs to be purely declarative, to allow independent progress of the underlying components to give automatic benefits
@@ -262,11 +250,11 @@ against security vulnerabilities.
 %  \item An empirical evaluation demonstrating \sys's feasibility across transformation scenarios~(\cref{sec:evaluation}).
 % \end{itemize}
 
-\heading{Availability}
-The \sys early-stage prototype in available as an open-source MIT-licensed artifact at:
-\begin{center}
-  \url{https://github.com/blinded}
-\end{center}
+% \heading{Availability}
+% The \sys early-stage prototype in available as an open-source MIT-licensed artifact at:
+% \begin{center}
+%   \url{https://github.com/blinded}
+% \end{center}
 
 
 
@@ -275,34 +263,32 @@ The \sys early-stage prototype in available as an open-source MIT-licensed artif
 
 Consider a complex application, like the one
 sketched in \cref{fig:ex-large-app}.
-A single codebase includes many needs for transformations.
-For example, a developer going through older parts of the codebase written by 
-a previous team might realize that many functions are susceptible to buffer-overflow attacks.
-Then, thinking about a recently incorporated JavaScript scripting component 
-that allows players to make custom extensions to key parts of client-side game logic, 
-suggests that perhaps code that deals with user input should all be moved inside 
-the sandboxed runtime.
+This single codebase encompasses different transformation needs.
+For example, a developer going through older parts of the codebase 
+might realize that many functions that accept user-controlled data are susceptible to buffer-overflow attacks.
+Later, reflecting on the recently added JavaScript scripting component used for player-made extensions, it becomes clear
+that these functions might be better moved entirely into the sandboxed runtime.
 Furthermore, the development team would like to identify functions that could 
 be broken down further to assist with performance profiling.
 
 \heading{The state of the art and practise}
-Currently, a developer has access to a myriad of different approaches 
+Right now, a developer has access to a myriad of different approaches 
 to attack the above problems, but all come with shortcomings.
 Code quality tools~\cite{avgustinov2016ql, Fowler99,Mens04,Myers16} and specialized transformation systems might be able to detect 
 code-smells or certain classes of vulnerabilities but are often very highly 
 tied to their target language.
 As the programming-language landscape is becoming increasingly diverse,
-and developers are building systems where multiple different languages are runtimes coexist,
-these limitations cannot be ignored.
+and multiple different languages are runtimes coexist in a single system,
+these limitations are becoming hard to ignore.
+But even by detecting improvement opportunities, it still falls on the development team to implement them.
 Program synthesis could be an attractive avenue that allows 
-the developer to 
-The ever-present limitation of traditional program synthesis techniques~\cite{jha2010oracle, raza2018disjunctive, singh2016blinkfill,wu2023programming, harp:ccs:2021, yaghmazadeh2018automated} is their 
-inability to scale beyond narrowly-defined computational domains.
-This scalability barrier is what statistical techniques like LLMs 
-have promised to solve.
-An LLM could in principle be tasked with performing all the aforementioned transformations.
+the developer to overcome the language barrier by synthesizing a new implementation that fits the refined specification.
+However, the ever-present limitation of traditional program synthesis techniques~\cite{jha2010oracle, raza2018disjunctive, singh2016blinkfill,wu2023programming, harp:ccs:2021, yaghmazadeh2018automated} is their
+difficulty to scale beyond narrowly-defined computational domains.
+Statistical techniques like LLMs show promise in addressing this scalability barrier.
 However, they come with no shortage of well-studied shortcomings~(\cref{sec:intro}).
-There have been systems that provide ranging amounts of control of LLM-generated 
+An LLM could in principle be tasked with performing all the aforementioned transformations, and
+there have been systems that provide ranging amounts of control of LLM-generated 
 programs~\cite{huang2023anplnaturalprogramminginteractive,li2025mccoderstreamliningmotioncontrol,barua2025pygencollaborativehumanaiapproach, tihanyi2025new},
 but there is a large gap of a unifying framework that identifies 
 key parts of the problems and applies LLMs in a way that underlines their strengths,
@@ -371,25 +357,25 @@ their outputs are \emph{wrong}.
   % https://docs.google.com/drawings/d/1zMcTurJ8twCG4BrkSUAJersbNSl5UQkogHqqg88vG9M/edit
   \includegraphics[width=.9\columnwidth]{figs/kvasir_application.pdf}
   \caption{\textbf{Applying \sys to a complex game application.}
-  The high level of modularity present in modern applications allows \sys to be applied effectively inside a codebase.
-  In the above graph, edges signify logical dependencies between components 
+  % The high level of modularity present in modern applications allows \sys to be applied effectively inside a codebase.
+  In the graph, edges signify logical dependencies between components 
   and shaded vertices signify parts of the codebase \sys is applied to~(\cref{sec:example}).
-  Dotted edges signify omitted layers of dependencies.
+  Dotted edges signify omitted layers or dependencies.
   }
   \label{fig:ex-large-app}
 \end{figure}
 
-This example is used to highlight the
-diversity of transformation goals that arise even within a single codebase:
+Consider the game application outlined in \cref{fig:ex-large-app}.
+A diversity of transformation goals arise even within a single codebase:
 security hardening, cross-language migration, modernization of unsafe idioms,
 and structural refactoring.
 
 \heading{A legacy input handling function}
-Zooming into the \ttt{cmd.c} file of the game codebase, 
-which handles parsing and executing user commands provided by an in-game console.
+Let's zoom into the \ttt{cmd.c} file of the game codebase,
+which handles parsing and executing user commands provided by an in-game console~(\cref{lst:ex-parse}).
 This functionality is used by developers to test and debug the game, but also during regular gameplay
-by game administrators or players where they can customize the game by spawning objects, changing game settings, \etc.
-Such code is often notoriously difficult to write,
+by game administrators or players so they can customize the game by spawning objects, changing game settings, \etc
+This kind of string-handling code is often notoriously difficult to write,
 and there have been many instances of buffer overflow vulnerabilities being introduced because of it~\cite{CVE-2006-3400, CVE-2006-3401, CVE-2007-5248, CVE-2019-1010043}.
 \begin{listing}
 \begin{minted}[]{js}
@@ -402,28 +388,30 @@ char *Cmd_Args(int argc, char **argv) {
  return args; }
 \end{minted}
 \caption{A string formatting function that concatenates command-line arguments into a single string.}
+  \label{lst:ex-parse}
 \end{listing}
 
 \begin{wrapfigure}[4]{r}{.53\columnwidth}
 \begin{minted}{prolog}
 fsignt(p_,S):-fsignt(p,S).
 graph(p_,I,O):-graph(p,I,O),
-               crash(p,I).
+               { crash(p,I); }.
 :-crash(p_,I),graph(p_,I,_).
 \end{minted}
 \end{wrapfigure}
-To the right is a program written in the \sys DSL to express this intent.
-This query requires the regenerated program \ttt{P\_} to exhibit the same
-input-output behavior on representative inputs that would cause a buffer overflow in the original program \ttt{P}
-but not on the regenerated program \ttt{P\_}.
-\sys first arrives the set of properties to extract from the
-original program, given the query:
-\{\prop{input(P, I)}, \prop{graph(P, I, O)}, \prop{fsignt(P, S)}\}, where
-\prop{input(P, I)} means that \sys will use extract a set of inputs from the original program
-by prompting an LLM with the program's source code and asking it to generate a set of inputs that
-would cause a buffer overflow in the original program;
+The developer wants to regenerate this function to eliminate this class of vulnuerabilities.
+Some realizations: because the function is pure, its behavior can be fully described by input–output examples; moreover, if a buffer overflow exists, there must be inputs that trigger it.
+To the right is a query written in the \sys DSL that hardens the function 
+against malicious inputs.
+This query requires the regenerated program \ttt{p\_} to exhibit the same
+input-output behavior on both representative inputs, but have non-faulty behavior on inputs that will cause a segmentation fault to the original program \ttt{p}.
+\sys first arrives at the set of properties to extract from the
+original program, given the query (capital \ttt{P} here matching both the original and regenerated program):
+\{\prop{graph(P, I, O)}, \prop{fsignt(P, S)}\}, where
 \prop{graph(P, I, O)} extracts the client-observable input-output behavior of the program
-by executing the original program on the generated inputs and recording the outputs;
+by executing the original program on the LLM-generated inputs and recording the outputs;
+\prop{crash(p, I)} signals the input generator to provide segmentation fault inducing inputs, 
+and filters those that actually do;
 and \prop{fsignt(P, S)} extracts each function's signature using a language-aware parser.
 After 30.4 seconds and two attempts \sys synthesizes the following program:
 \begin{minted}[]{js}
@@ -466,7 +454,8 @@ implemented in JavaScript and must preserve observable behavior over a
 representative set of inputs and outputs.
 To bridge differences in
 representation between C and JavaScript, the query invokes the \ttt{tr} plugin
-to convert each input and output into equivalent forms suitable for the target language.
+to convert each input and output into an equivalen one in the target language.
+Behind-the-scenes a fine-tuned LLM will perform this translation.
 \sys first determines the minimal set of properties to extract from the
 original function: \{\prop{graph(P, I, O)}\}.
 It then, again, invokes \ttt{tr} to produce
@@ -509,7 +498,7 @@ float Q_rsqrt(float number) {
 \end{listing}
 The query to the right uses lines of code as a coarse metric of
 idiomaticity. \sys regenerates the program, minimizing this metric while
-preserving observable behavior over a representative set of inputs which will be generated by an LLM instance.
+preserving observable behavior over a set of inputs which will be generated by an LLM instance.
 \begin{wrapfigure}[2]{r}{.6\columnwidth}
 \begin{minted}{prolog}
 graph(p_,I,O):-graph(p,I,O).
@@ -691,24 +680,6 @@ A total of seven plugins have been implemented (\ttt{graph}, \ttt{tr}, \ttt{len}
 Each plugin ranges from 9 to 51 lines-of-code,
 with the entire codebase being 605 lines-of-code.
 
-\heading{A benchmark suite for program regeneration}
-For research on program regeneration to flourish, it needs a common benchmark
-suite that captures the diversity and difficulty of real-world transformations.
-Today, there is no equivalent of SPEC for performance or Defects4J for bug
-fixing---researchers and practitioners rely on ad hoc examples that are hard to compare and often
-oversimplified.
-This lack of a shared baseline obscures progress. 
-A useful set of benchmarks should include
-programs that
-(1) are real and non-trivial,
-(2) are written in a variety of languages, 
-(3) cover a wide range of computational domains.
-Each benchmark should include an original program, 
-the same program that undergoes the transformation described in natural-language 
-in an accompanying file, and a set of tests that verify that the transformation was successful.
-Following the lead of benchmarking efforts~\cite{SPEC_CPU2017, dacapo2006, koala:atc:2025}, the suite should be made open-source, community 
-first, and an established technical steering committee should guide extensions and modifications towards maintaining the suite's relevance.
-
 \sys takes a step in this direction with its prototype benchmarks.
 This suite contains tasks across several dimensions: its
 ability to regenerate correct and maintainable
@@ -819,6 +790,21 @@ Right now, in cases where the system finds no satisfactory candidate, regenerati
 but mitigating these risks, even partially will 
 require co-design between the property extraction and synthesis backend~\cite{banerjee2025crane}.
 
+\heading{Deployment scenarios}
+\sys supports a range of deployment scenarios.
+It is particularly well-suited for use during maintenance and auditing phases, where developers seek to refactor or replace components, especially when the original code is difficult to understand, modify, or is unavailable and the component exists only as a binary.
+It can also assist during development, for instance when integrating
+third-party modules that must be adapted to local conventions or hardened
+against security vulnerabilities.
+% For example, a developer can regenerate a C library as idiomatic
+% JavaScript while preserving input-output equivalence, or decompose a monolithic function
+% into modular components suitable for sandboxing.
+% However, \sys is not designed for whole-program synthesis or large-scale migrations.
+% Its strength lies in scoped regeneration tasks, typically at the granularity of a function, method, or small module---where transformation goals can be explicitly stated and verified in isolation.
+% To this end, \sys can function not only as a standalone tool but also as a
+% library, where other components can invoke it as a programmable,
+% constraint-guided regeneration module.
+
 \heading{Language-specific support}
 Although some components of \sys are language-agnostic (\eg logic-based planning),
 others---particularly extraction and verification plugins are not.
@@ -830,6 +816,25 @@ Work on a unified language representation~\cite{koppel2018onetool,bap2011,dillig
 is relevant to overcoming this limitation.
 The current \sys prototype
 supports Python, JavaScript, Haskell, and C. 
+
+\heading{A benchmark suite for program regeneration} % TODO: Fix this
+For research on program regeneration to flourish, it needs a common benchmark
+suite that captures the diversity and difficulty of real-world transformations.
+Today, there is no equivalent of SPEC for performance or Defects4J for bug
+fixing---researchers and practitioners rely on ad hoc examples that are hard to compare and often
+oversimplified.
+This lack of a shared baseline obscures progress. 
+A useful set of benchmarks should include
+programs that
+(1) are real and non-trivial,
+(2) are written in a variety of languages, 
+(3) cover a wide range of computational domains.
+Each benchmark should include an original program, 
+the same program that undergoes the transformation described in natural-language 
+in an accompanying file, and a set of tests that verify that the transformation was successful.
+Following the lead of benchmarking efforts~\cite{SPEC_CPU2017, dacapo2006, koala:atc:2025}, the suite should be made open-source, community 
+first, and an established technical steering committee should guide extensions and modifications towards maintaining the suite's relevance.
+
 
 
 
