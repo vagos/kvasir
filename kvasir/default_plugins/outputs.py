@@ -10,7 +10,10 @@ class IOExamples(Property):
     """A list of (input, output) pairs derived from executing the program."""
 
     def to_lm(self):
-        return ""
+        lmstr = ""
+        for input, output in self.value:
+            lmstr += f"Input: {input}, Output: {output}\n"
+        return lmstr
 
 @hookimpl
 def apply(program):

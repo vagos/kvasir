@@ -29,8 +29,8 @@ def apply(program):
 @hookimpl
 def knowledge(kb, program):
     kb.add_logic("can(syscall_trace(p)).", "Program can be traced for syscalls.")
-    kb.add_logic(":- syscall_trace(p), not inputs(p).", "Syscalls can only be traced if inputs are available.")
-    kb.add_logic(":- syscall_trace(p), pure(p).", "Syscalls should not be traced for pure programs without side effects.")
+    kb.add_logic(":- do(syscall_trace(p)), not do(inputs(p)).", "Syscalls can only be traced if inputs are available.")
+    kb.add_logic(":- do(syscall_trace(p)), pure(p).", "Syscalls should not be traced for pure programs without side effects.")
 
 import platform
 
